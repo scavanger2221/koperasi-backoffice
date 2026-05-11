@@ -32,6 +32,9 @@
 }
 
 @layer base {
+  html {
+    background-color: var(--color-background);
+  }
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -44,7 +47,7 @@
   }
 }
 
-.dark {
+html.dark {
   --color-background: oklch(0.145 0 0);
   --color-foreground: oklch(0.985 0 0);
   --color-card: oklch(0.205 0 0);

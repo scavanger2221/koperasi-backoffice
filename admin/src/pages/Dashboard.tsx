@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Users, Wallet, HandCoins, AlertTriangle, ArrowUpRight, Activity, Plus, UserPlus, CircleDollarSign } from "lucide-react";
+import { TrendingUp, Users, Wallet, HandCoins, AlertTriangle, ArrowUpRight, Activity, UserPlus, CircleDollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { formatRupiah } from "@/lib/utils";
