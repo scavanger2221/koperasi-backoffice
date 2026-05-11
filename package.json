@@ -1,0 +1,17 @@
+{
+  "name": "koperasi-backoffice",
+  "private": true,
+  "packageManager": "npm@11.13.0",
+  "workspaces": ["api", "admin", "shared"],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:generate": "cd api && npx drizzle-kit generate",
+    "db:migrate": "cd api && npx drizzle-kit migrate",
+    "db:seed": "cd api && npx tsx src/lib/seed.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.3"
+  }
+}

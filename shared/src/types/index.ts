@@ -1,0 +1,82 @@
+export type UserRole = "super_admin" | "admin" | "pengurus" | "bendahara" | "pengawas" | "anggota";
+
+export interface User {
+  id: string;
+  anggotaId?: string;
+  email: string;
+  nama: string;
+  role: UserRole;
+  aktif: boolean;
+}
+
+export interface Anggota {
+  id: string;
+  noAnggota: string;
+  nik: string;
+  nama: string;
+  tempatLahir: string;
+  tanggalLahir: string;
+  alamat: string;
+  pekerjaan: string;
+  noTelepon: string;
+  email?: string;
+  status: "menunggu_verifikasi" | "aktif" | "nonaktif" | "ditolak";
+  tanggalDaftar: string;
+  createdAt: string;
+}
+
+export interface Simpanan {
+  id: string;
+  anggotaId: string;
+  jenis: "pokok" | "wajib" | "sukarela" | "deposito";
+  jumlah: string;
+  tanggal: string;
+  metodeBayar: "tunai" | "transfer" | "qris";
+  keterangan?: string;
+  createdAt: string;
+}
+
+export interface Pinjaman {
+  id: string;
+  anggotaId: string;
+  noPinjaman: string;
+  jumlah: string;
+  bungaPersen: string;
+  jenisBunga: "flat" | "efektif" | "anuitas" | "syariah";
+  jangkaWaktu: number;
+  angsuranPerBulan: string;
+  status: "diajukan" | "disetujui" | "aktif" | "lunas" | "ditolak" | "macet";
+  tanggalPengajuan: string;
+  tanggalAcc?: string;
+  tanggalPencairan?: string;
+  keterangan?: string;
+  createdAt: string;
+}
+
+export interface Angsuran {
+  id: string;
+  pinjamanId: string;
+  angsuranKe: number;
+  tanggalJatuhTempo: string;
+  tanggalBayar?: string;
+  jumlahPokok: string;
+  jumlahBunga: string;
+  denda: string;
+  totalBayar: string;
+  status: "belum_lunas" | "lunas" | "telat";
+  createdAt: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+  error?: {
+    code: number;
+    message: string;
+  };
+}
