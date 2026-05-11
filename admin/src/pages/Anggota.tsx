@@ -68,12 +68,12 @@ export default function Anggota() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; className: string }> = {
-      aktif: { label: "Aktif", className: "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900" },
-      menunggu_verifikasi: { label: "Pending", className: "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900" },
-      nonaktif: { label: "Nonaktif", className: "bg-red-50 text-red-700 border-red-100 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900" },
-      ditolak: { label: "Ditolak", className: "bg-gray-50 text-gray-700 border-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700" },
+      aktif: { label: "Aktif", className: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900" },
+      menunggu_verifikasi: { label: "Pending", className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900" },
+      nonaktif: { label: "Nonaktif", className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900" },
+      ditolak: { label: "Ditolak", className: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700" },
     };
-    const s = map[status] || { label: status, className: "bg-gray-50 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" };
+    const s = map[status] || { label: status, className: "bg-gray-100 text-gray-800 dark:bg-zinc-800 dark:text-zinc-300" };
     return <Badge className={`${s.className} font-medium text-[11px] px-2 py-0.5`} variant="outline">{s.label}</Badge>;
   };
 

@@ -146,13 +146,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
                     active
-                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 shadow-sm"
+                      ? "bg-emerald-600 text-white dark:bg-emerald-950/30 dark:text-emerald-400 shadow-sm"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <item.icon className={cn("w-[18px] h-[18px]", active ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")} />
+                  <item.icon className={cn("w-[18px] h-[18px]", active ? "text-white dark:text-emerald-400" : "text-muted-foreground")} />
                   {item.label}
-                  {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                  {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white dark:bg-emerald-500" />}
                 </Link>
               );
             })}

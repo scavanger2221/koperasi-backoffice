@@ -15,9 +15,9 @@ interface RingkasanData {
 }
 
 const quickActions = [
-  { label: "Anggota", icon: UserPlus, path: "/anggota", color: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400" },
-  { label: "Simpanan", icon: CircleDollarSign, path: "/simpanan", color: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" },
-  { label: "Pinjaman", icon: HandCoins, path: "/pinjaman", color: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400" },
+  { label: "Anggota", icon: UserPlus, path: "/anggota", color: "bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400" },
+  { label: "Simpanan", icon: CircleDollarSign, path: "/simpanan", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400" },
+  { label: "Pinjaman", icon: HandCoins, path: "/pinjaman", color: "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400" },
 ];
 
 export default function Dashboard() {
@@ -33,7 +33,7 @@ export default function Dashboard() {
       change: "+2 bulan ini",
       icon: Users,
       gradient: "from-blue-500 to-indigo-600",
-      light: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
+      light: "bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400",
     },
     {
       label: "Total Simpanan",
@@ -41,7 +41,7 @@ export default function Dashboard() {
       change: "+12% vs bulan lalu",
       icon: Wallet,
       gradient: "from-emerald-500 to-teal-600",
-      light: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
+      light: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400",
     },
     {
       label: "Pinjaman Aktif",
@@ -49,7 +49,7 @@ export default function Dashboard() {
       change: "Rp " + formatRupiah(ringkasan?.data.totalPinjaman ?? 0).replace("Rp", "").trim(),
       icon: HandCoins,
       gradient: "from-amber-500 to-orange-600",
-      light: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
+      light: "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400",
     },
     {
       label: "Tunggakan",
@@ -57,7 +57,7 @@ export default function Dashboard() {
       change: `${ringkasan?.data.jumlahAngsuranTunggakan ?? 0} angsuran belum bayar`,
       icon: AlertTriangle,
       gradient: "from-red-500 to-rose-600",
-      light: "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400",
+      light: "bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400",
     },
   ];
 
@@ -238,10 +238,10 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {[
-                  { act: "Setoran Simpanan", user: "Budi Santoso", amt: 50000, status: "Selesai", statusColor: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" },
-                  { act: "Pengajuan Pinjaman", user: "Siti Aminah", amt: 12000000, status: "Diproses", statusColor: "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
-                  { act: "Bayar Angsuran", user: "Budi Santoso", amt: 1120000, status: "Selesai", statusColor: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" },
-                  { act: "Pencairan Pinjaman", user: "Test User", amt: 12000000, status: "Aktif", statusColor: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" },
+                  { act: "Setoran Simpanan", user: "Budi Santoso", amt: 50000, status: "Selesai", statusColor: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400" },
+                  { act: "Pengajuan Pinjaman", user: "Siti Aminah", amt: 12000000, status: "Diproses", statusColor: "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400" },
+                  { act: "Bayar Angsuran", user: "Budi Santoso", amt: 1120000, status: "Selesai", statusColor: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400" },
+                  { act: "Pencairan Pinjaman", user: "Test User", amt: 12000000, status: "Aktif", statusColor: "bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400" },
                 ].map((row, i) => (
                   <tr key={i} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
                     <td className="py-3 px-3 font-medium text-foreground">{row.act}</td>
@@ -264,10 +264,10 @@ export default function Dashboard() {
       <div className="lg:hidden space-y-3">
         <h3 className="text-base font-semibold text-foreground">Aktivitas Terkini</h3>
         {[
-          { act: "Setoran Simpanan", user: "Budi Santoso", amt: 50000, status: "Selesai", statusColor: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" },
-          { act: "Pengajuan Pinjaman", user: "Siti Aminah", amt: 12000000, status: "Diproses", statusColor: "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
-          { act: "Bayar Angsuran", user: "Budi Santoso", amt: 1120000, status: "Selesai", statusColor: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" },
-          { act: "Pencairan Pinjaman", user: "Test User", amt: 12000000, status: "Aktif", statusColor: "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" },
+          { act: "Setoran Simpanan", user: "Budi Santoso", amt: 50000, status: "Selesai", statusColor: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400" },
+          { act: "Pengajuan Pinjaman", user: "Siti Aminah", amt: 12000000, status: "Diproses", statusColor: "bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400" },
+          { act: "Bayar Angsuran", user: "Budi Santoso", amt: 1120000, status: "Selesai", statusColor: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400" },
+          { act: "Pencairan Pinjaman", user: "Test User", amt: 12000000, status: "Aktif", statusColor: "bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400" },
         ].map((row, i) => (
           <Card key={i} className="border-0 shadow-sm">
             <CardContent className="p-4">
