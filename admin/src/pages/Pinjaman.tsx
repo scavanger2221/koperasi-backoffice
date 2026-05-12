@@ -110,6 +110,7 @@ export default function PinjamanPage() {
     mutationFn: (id: string) => api(`/api/pinjaman/${id}/approve`, { method: "PATCH" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pinjaman"] });
+      queryClient.invalidateQueries({ queryKey: ["pinjaman-detail"] });
       toast("Pinjaman disetujui", "success");
     },
     onError: () => toast("Gagal menyetujui pinjaman", "error"),
@@ -119,6 +120,7 @@ export default function PinjamanPage() {
     mutationFn: (id: string) => api(`/api/pinjaman/${id}/cair`, { method: "PATCH" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pinjaman"] });
+      queryClient.invalidateQueries({ queryKey: ["pinjaman-detail"] });
       toast("Pinjaman dicairkan", "success");
     },
     onError: () => toast("Gagal mencairkan pinjaman", "error"),

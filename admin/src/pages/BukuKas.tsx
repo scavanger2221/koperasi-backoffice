@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Loader2, ArrowDownLeft, ArrowUpRight, Download } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { formatRupiah } from "@/lib/utils";
 
@@ -82,47 +82,47 @@ export default function BukuKasPage() {
         <p className="text-sm text-muted-foreground mt-0.5">Pencatatan transaksi kas masuk dan keluar</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Card className="border-0 shadow-sm bg-emerald-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-600/20 flex items-center justify-center">
-                <ArrowDownLeft className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase font-medium">Kas Masuk</p>
-                <p className="text-lg font-bold text-emerald-400">{formatRupiah(totalDebit)}</p>
-              </div>
+      {/* Stats — Dashboard-style cards */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Kas Masuk
+            </CardTitle>
+            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
+              <ArrowDownLeft className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{formatRupiah(totalDebit)}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm bg-red-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-red-600/20 flex items-center justify-center">
-                <ArrowUpRight className="w-4 h-4 text-red-400" />
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase font-medium">Kas Keluar</p>
-                <p className="text-lg font-bold text-red-400">{formatRupiah(totalKredit)}</p>
-              </div>
+        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Kas Keluar
+            </CardTitle>
+            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center">
+              <ArrowUpRight className="w-5 h-5 text-red-600 dark:text-red-400" />
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{formatRupiah(totalKredit)}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-sm bg-blue-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-600/20 flex items-center justify-center">
-                <BookOpen className="w-4 h-4 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 uppercase font-medium">Saldo Akhir</p>
-                <p className="text-lg font-bold text-blue-400">{formatRupiah(saldoAkhir)}</p>
-              </div>
+        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              Saldo Akhir
+            </CardTitle>
+            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/30 flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">{formatRupiah(saldoAkhir)}</div>
           </CardContent>
         </Card>
       </div>
