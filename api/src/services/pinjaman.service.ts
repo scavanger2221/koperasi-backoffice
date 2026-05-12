@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import crypto from "crypto";
 import { db } from "../lib/db.js";
@@ -138,6 +138,76 @@ export class PinjamanService {
     return { id, status: "aktif" };
   }
 
+  async getDenda(tanggalJatuhTempo: string): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(tanggalJatuhTempo);
+    due.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays <= 0) return 0;
+    // Denda 0.5% per bulan dari sisa angsuran
+    return Math.floor(diffDays * 0.5 / 30);
+  }
+
+  async getKolektibilitas(pinjamanId: string): Promise<number> {
+    const angsuranList = await db
+      .select()
+      .from(angsuran)
+      .where(eq(angsuran.pinjamanId, pinjamanId));
+
+    let maxTelat = 0;
+    for (const a of angsuranList) {
+      if (a.status === "lunas" || a.status === "telat") {
+        if (a.tanggalBayar) {
+          const due = new Date(a.tanggalJatuhTempo);
+          const bayar = new Date(a.tanggalBayar);
+          const diff = Math.floor((bayar.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+          if (diff > maxTelat) maxTelat = diff;
+        }
+      } else if (a.status === "belum_lunas") {
+        const today = new Date();
+        const due = new Date(a.tanggalJatuhTempo);
+        const diff = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+        if (diff > maxTelat) maxTelat = diff;
+      }
+    }
+
+    if (maxTelat === 0) return 1; // Lancar
+    if (maxTelat <= 90) return 2; // Kurang Lancar
+    if (maxTelat <= 180) return 3; // Diragukan
+    return 4; // Macet
+  }
+
+  async cekDanUpdateDenda() {
+    const today = new Date().toISOString().split("T")[0];
+    const unpaid = await db
+      .select()
+      .from(angsuran)
+      .where(and(eq(angsuran.status, "belum_lunas"), sql`${angsuran.tanggalJatuhTempo} < ${today}`));
+
+    for (const a of unpaid) {
+      const denda = await this.getDenda(a.tanggalJatuhTempo);
+      if (denda > 0) {
+        const totalBayar = Number(a.jumlahPokok) + Number(a.jumlahBunga) + denda;
+        await db
+          .update(angsuran)
+          .set({ denda: String(denda), totalBayar: String(totalBayar), status: "telat" })
+          .where(eq(angsuran.id, a.id));
+      }
+    }
+
+    // Update kolektibilitas → macet jika >90 hari
+    const activePinjaman = await db.select().from(pinjaman).where(eq(pinjaman.status, "aktif"));
+    for (const p of activePinjaman) {
+      const kol = await this.getKolektibilitas(p.id);
+      if (kol >= 4) {
+        await db.update(pinjaman).set({ status: "macet" }).where(eq(pinjaman.id, p.id));
+      }
+    }
+
+    return { updated: unpaid.length };
+  }
+
   async bayarAngsuran(data: AngsuranInput) {
     const p = await db.select().from(pinjaman).where(eq(pinjaman.id, data.pinjamanId)).get();
     if (!p) throw new HTTPException(404, { message: "Pinjaman tidak ditemukan" });
@@ -154,12 +224,18 @@ export class PinjamanService {
 
     if (!angs) throw new HTTPException(400, { message: "Tidak ada angsuran yang menunggu pembayaran" });
 
+    // Hitung denda otomatis jika telat
+    const denda = await this.getDenda(angs.tanggalJatuhTempo);
+    const totalBayar = Number(angs.jumlahPokok) + Number(angs.jumlahBunga) + denda;
+
     await db
       .update(angsuran)
       .set({
         status: "lunas",
         tanggalBayar: data.tanggalBayar,
         metodeBayar: data.metodeBayar as any,
+        denda: String(denda),
+        totalBayar: String(totalBayar),
       })
       .where(eq(angsuran.id, angs.id));
 
@@ -170,7 +246,7 @@ export class PinjamanService {
       anggotaNama: member?.nama || "-",
       pokok: Number(angs.jumlahPokok),
       bunga: Number(angs.jumlahBunga),
-      denda: Number(angs.denda),
+      denda,
       tanggal: data.tanggalBayar,
       metodeBayar: data.metodeBayar,
     });
@@ -186,7 +262,17 @@ export class PinjamanService {
       await db.update(pinjaman).set({ status: "lunas" }).where(eq(pinjaman.id, data.pinjamanId));
     }
 
-    return { angsuranId: angs.id, status: "lunas" };
+    return { angsuranId: angs.id, status: "lunas", denda };
+  }
+
+  async getKolektibilitasSummary() {
+    const allPinjaman = await db.select().from(pinjaman).where(eq(pinjaman.status, "aktif"));
+    const summary = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    for (const p of allPinjaman) {
+      const kol = await this.getKolektibilitas(p.id);
+      summary[kol as keyof typeof summary]++;
+    }
+    return summary;
   }
 }
 

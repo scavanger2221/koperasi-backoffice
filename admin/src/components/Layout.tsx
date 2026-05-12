@@ -14,6 +14,9 @@ import {
   Settings,
   Moon,
   Sun,
+  Receipt,
+  ClipboardList,
+  BarChart3,
 } from "lucide-react";
 import { CommandPalette } from "./CommandPalette";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +29,9 @@ const navItems = [
   { label: "Simpanan", icon: Wallet, path: "/simpanan" },
   { label: "Pinjaman", icon: HandCoins, path: "/pinjaman" },
   { label: "Buku Kas", icon: BookOpen, path: "/buku-kas" },
+  { label: "Tagihan", icon: Receipt, path: "/tagihan" },
+  { label: "Laporan", icon: BarChart3, path: "/laporan" },
+  { label: "Audit Log", icon: ClipboardList, path: "/audit" },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

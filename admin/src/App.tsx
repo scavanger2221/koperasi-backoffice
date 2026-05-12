@@ -8,6 +8,9 @@ import Anggota from "@/pages/Anggota";
 import SimpananPage from "@/pages/Simpanan";
 import PinjamanPage from "@/pages/Pinjaman";
 import BukuKasPage from "@/pages/BukuKas";
+import LaporanPage from "@/pages/Laporan";
+import TagihanPage from "@/pages/Tagihan";
+import AuditLogPage from "@/pages/AuditLog";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, ready } = useAuth();
@@ -65,6 +68,30 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <BukuKasPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/laporan"
+        element={
+          <PrivateRoute>
+            <LaporanPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/tagihan"
+        element={
+          <PrivateRoute>
+            <TagihanPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/audit"
+        element={
+          <PrivateRoute>
+            <AuditLogPage />
           </PrivateRoute>
         }
       />

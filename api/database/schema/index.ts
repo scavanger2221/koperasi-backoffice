@@ -97,6 +97,30 @@ export const jurnal = sqliteTable("jurnal", {
   createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
 });
 
+export const auditLog = sqliteTable("audit_log", {
+  id: text("id").primaryKey(),
+  userId: text("user_id"),
+  userEmail: text("user_email"),
+  userRole: text("user_role"),
+  action: text("action").notNull(),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  detail: text("detail"),
+  ipAddress: text("ip_address"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+});
+
+export const tagihanSimpanan = sqliteTable("tagihan_simpanan", {
+  id: text("id").primaryKey(),
+  anggotaId: text("anggota_id").notNull().references(() => anggota.id),
+  periode: text("periode").notNull(), // YYYY-MM
+  jenis: text("jenis", { enum: ["wajib"] }).notNull().default("wajib"),
+  jumlah: text("jumlah").notNull(),
+  status: text("status", { enum: ["belum_bayar", "lunas", "tunggakan"] }).notNull().default("belum_bayar"),
+  tanggalBayar: text("tanggal_bayar"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+});
+
 export const jurnalDetail = sqliteTable("jurnal_detail", {
   id: text("id").primaryKey(),
   jurnalId: text("jurnal_id").notNull().references(() => jurnal.id),

@@ -55,19 +55,15 @@ koperasi-backoffice/
 ```
 Anggota ──┬── Simpanan (Pokok, Wajib, Sukarela, Deposito)
           ├── Pinjaman ── Angsuran
-          ├── Transaksi
+          ├── TagihanSimpanan
           ├── SHU
           └── User (akun login)
 
-Koperasi ──┬── Pengurus/Role
-           ├── UnitUsaha (Toko, PPOB, Jasa)
-           ├── Produk
-           ├── Kategori
-           └── PeriodeBuku (tahun buku)
+Jurnal ──┬── JurnalDetail ── Akun
+         └── BukuBesar ── NeracaSaldo
 
-Transaksi ──┬── Jurnal
-            ├── BukuBesar
-            └── Laporan
+Transaksi ── Jurnal ── Laporan (LabaRugi, Neraca)
+AuditLog ── User (who did what)
 ```
 
 ### Detail Tabel
@@ -270,6 +266,32 @@ Transaksi ──┬── Jurnal
 | kategori_id | uuid FK? | |
 | aktif | boolean | |
 
+#### `tagihan_simpanan`
+| Kolom | Type | Keterangan |
+|-------|------|------------|
+| id | uuid PK | |
+| anggota_id | uuid FK | |
+| periode | varchar | YYYY-MM |
+| jenis | enum | wajib |
+| jumlah | text | Nominal tagihan |
+| status | enum | belum_bayar, lunas, tunggakan |
+| tanggal_bayar | date? | |
+| created_at | timestamp | |
+
+#### `audit_log`
+| Kolom | Type | Keterangan |
+|-------|------|------------|
+| id | uuid PK | |
+| user_id | uuid? | |
+| user_email | varchar | |
+| user_role | varchar | |
+| action | varchar | e.g. CREATE_ANGGOTA |
+| entity_type | varchar? | e.g. anggota |
+| entity_id | uuid? | |
+| detail | text? | |
+| ip_address | varchar? | |
+| created_at | timestamp | |
+
 #### `users` (Akun Login)
 | Kolom | Type | Keterangan |
 |-------|------|------------|
@@ -318,12 +340,15 @@ GET    /api/simpanan/mutasi       → Mutasi simpanan
 
 ### Pinjaman
 ```
-GET    /api/pinjaman              → List pinjaman
-GET    /api/pinjaman/:id          → Detail + angsuran
-POST   /api/pinjaman              → Ajukan pinjaman
-PATCH  /api/pinjaman/:id/approve  → Approve (pengurus)
-PATCH  /api/pinjaman/:id/cair     → Cairkan (bendahara)
-POST   /api/pinjaman/:id/bayar    → Bayar angsuran
+GET    /api/pinjaman                   → List pinjaman
+GET    /api/pinjaman/:id               → Detail + angsuran
+GET    /api/pinjaman/:id/kolektibilitas → Kolektibilitas pinjaman
+GET    /api/pinjaman/kolektibilitas/summary → Ringkasan kolektibilitas
+POST   /api/pinjaman/cek-denda         → Cek & update denda otomatis
+POST   /api/pinjaman                   → Ajukan pinjaman
+PATCH  /api/pinjaman/:id/approve       → Approve (pengurus)
+PATCH  /api/pinjaman/:id/cair          → Cairkan (bendahara)
+POST   /api/pinjaman/bayar             → Bayar angsuran
 ```
 
 ### SHU
@@ -349,10 +374,28 @@ GET    /api/rat/:id/export        → Export PDF
 
 ### Pembukuan
 ```
-GET    /api/jurnal                → Jurnal
+GET    /api/jurnal                → Jurnal transaksi
+GET    /api/jurnal/buku-kas       → Buku kas (filter per akun kas)
+GET    /api/jurnal/buku-besar/:akunId → Buku besar per akun
+GET    /api/jurnal/neraca-saldo   → Neraca saldo semua akun
+GET    /api/jurnal/laba-rugi      → Laporan laba rugi
+GET    /api/jurnal/neraca         → Neraca (aset = kewajiban + ekuitas)
 GET    /api/akun                  → Chart of accounts
 POST   /api/jurnal                → Entry jurnal manual
-GET    /api/neraca-saldo          → Neraca saldo
+```
+
+### Tagihan Simpanan Wajib
+```
+GET    /api/tagihan               → List tagihan
+GET    /api/tagihan/summary       → Ringkasan tagihan per periode
+POST   /api/tagihan/generate      → Generate tagihan bulanan
+POST   /api/tagihan/bayar         → Bayar tagihan
+POST   /api/tagihan/cek-tunggakan → Mark tagihan lama sebagai tunggakan
+```
+
+### Audit Log
+```
+GET    /api/audit                 → List audit log
 ```
 
 ### Unit Usaha
@@ -381,54 +424,15 @@ GET    /api/dashboard/aktivitas   → Aktivitas terkini
 ### Admin Dashboard — `admin/src/pages`
 
 ```
-/admin/login                → Login admin
-/admin/beranda              → Dashboard
-
-# Manajemen
-/admin/anggota              → Daftar anggota
-/admin/anggota/tambah       → Tambah anggota
-/admin/anggota/:id          → Detail anggota
-
-# Simpanan
-/admin/simpanan             → Semua simpanan
-/admin/simpanan/setor       → Catat setoran
-/admin/simpanan/wajib       → Atur simpanan wajib
-
-# Pinjaman
-/admin/pinjaman             → Semua pinjaman
-/admin/pinjaman/:id         → Detail + approve
-
-# Pembukuan
-/admin/pembukuan/jurnal     → Jurnal
-/admin/pembukuan/buku-besar → Buku besar
-/admin/pembukuan/neraca     → Neraca saldo
-/admin/pembukuan/akun       → Chart of accounts
-
-# Laporan
-/admin/laporan/neraca       → Neraca
-/admin/laporan/laba-rugi    → Laba rugi
-/admin/laporan/arus-kas     → Arus kas
-/admin/laporan/shu          → SHU
-
-# RAT
-/admin/rat                  → Daftar RAT
-/admin/rat/buat             → Buat RAT baru
-/admin/rat/:id              → Detail RAT
-
-# SHU
-/admin/shu                  → Kelola SHU
-/admin/shu/hitung           → Hitung SHU
-/admin/shu/:id              → Detail alokasi
-
-# Unit Usaha
-/admin/unit-usaha           → Kelola unit
-/admin/produk               → Kelola produk
-/admin/penjualan            → Riwayat penjualan
-
-# Pengaturan
-/admin/settings             → Pengaturan koperasi
-/admin/users                → Manajemen user
-/admin/audit-log            → Log aktivitas
+/login                      → Login admin
+/                           → Dashboard
+/anggota                    → Daftar anggota
+/simpanan                   → Semua simpanan
+/pinjaman                   → Semua pinjaman
+/buku-kas                   → Buku kas
+/tagihan                    → Tagihan simpanan wajib
+/laporan                    → Laporan keuangan (buku besar, neraca saldo, laba rugi, neraca)
+/audit                      → Audit log aktivitas
 ```
 
 ---
@@ -486,14 +490,16 @@ GET    /api/dashboard/aktivitas   → Aktivitas terkini
 
 | Modul | Estimasi | Dependensi |
 |-------|----------|------------|
-| Setup boilerplate (api + admin + shared) | 1 hari | — |
-| Auth login + RBAC | 3 hari | — |
-| Manajemen anggota CRUD | 3 hari | Auth |
-| Simpanan (pokok, wajib, sukarela) | 4 hari | Anggota |
-| Pinjaman + angsuran | 5 hari | Anggota |
-| Pembukuan dasar (jurnal, buku besar) | 3 hari | Transaksi |
-| Dashboard ringkasan | 2 hari | Semua modul |
-| **Total MVP** | **~21 hari** | |
+| Setup boilerplate (api + admin + shared) | ✅ Done | — |
+| Auth login + RBAC | ✅ Done | — |
+| Manajemen anggota CRUD | ✅ Done | Auth |
+| Simpanan (pokok, wajib, sukarela, deposito) | ✅ Done | Anggota |
+| Pinjaman + angsuran + denda + kolektibilitas | ✅ Done | Anggota |
+| Pembukuan (jurnal, buku kas, buku besar, neraca saldo, laba rugi, neraca) | ✅ Done | Transaksi |
+| Auto-tagihan simpanan wajib | ✅ Done | Anggota |
+| Audit log | ✅ Done | Semua modul |
+| Dashboard ringkasan + kesehatan koperasi | ✅ Done | Semua modul |
+| **Total MVP** | **✅ COMPLETE** | |
 
 ---
 
@@ -503,35 +509,49 @@ GET    /api/dashboard/aktivitas   → Aktivitas terkini
 api/src/
 ├── index.ts                    # Entry point Hono
 ├── routes/
-│   ├── auth.ts
-│   ├── anggota.ts
-│   ├── simpanan.ts
-│   ├── pinjaman.ts
-│   ├── shu.ts
-│   ├── laporan.ts
-│   └── dashboard.ts
+│   ├── auth.route.ts
+│   ├── anggota.route.ts
+│   ├── simpanan.route.ts
+│   ├── pinjaman.route.ts
+│   ├── jurnal.route.ts         # Jurnal, buku kas, buku besar, neraca saldo, laba rugi, neraca
+│   ├── tagihan.route.ts        # Tagihan simpanan wajib
+│   ├── audit.route.ts          # Audit log
+│   └── dashboard.route.ts
 ├── controllers/
 │   ├── auth.controller.ts
 │   ├── anggota.controller.ts
 │   ├── simpanan.controller.ts
 │   ├── pinjaman.controller.ts
-│   ├── shu.controller.ts
-│   ├── laporan.controller.ts
+│   ├── jurnal.controller.ts
+│   ├── tagihan.controller.ts
+│   ├── audit.controller.ts
 │   └── dashboard.controller.ts
 ├── services/
 │   ├── anggota.service.ts
 │   ├── simpanan.service.ts
-│   ├── pinjaman.service.ts
-│   ├── shu.service.ts          # Core: perhitungan SHU
-│   └── laporan.service.ts
+│   ├── pinjaman.service.ts     # + denda otomatis, kolektibilitas
+│   ├── jurnal.service.ts       # Jurnal otomatis + laporan keuangan
+│   ├── tagihan.service.ts      # Auto-generate tagihan wajib
+│   ├── audit.service.ts        # Audit trail logging
+│   └── dashboard.service.ts
 ├── middleware/
 │   ├── auth.ts                 # JWT verify
-│   ├── rbac.ts                 # Role-based access
-│   ├── validate.ts             # Zod validation
+│   ├── audit.ts                # Audit middleware (after action)
 │   └── error.ts                # Global error handler
 ├── lib/
 │   ├── config.ts               # Env config
 │   ├── db.ts                   # Drizzle client
-│   └── logger.ts               # Logger
+│   └── seed-akun.ts            # Seed chart of accounts
 └── package.json
+
+admin/src/pages/
+├── Login.tsx
+├── Dashboard.tsx
+├── Anggota.tsx
+├── Simpanan.tsx
+├── Pinjaman.tsx
+├── BukuKas.tsx
+├── Tagihan.tsx                 # Tagihan simpanan wajib
+├── Laporan.tsx                 # Buku besar, neraca saldo, laba rugi, neraca
+└── AuditLog.tsx                # Riwayat aktivitas
 ```

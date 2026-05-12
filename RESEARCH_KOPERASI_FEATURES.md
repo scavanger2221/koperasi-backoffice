@@ -32,12 +32,12 @@
 - [x] Kolektibilitas & laporan pinjaman
 
 ### 4. Pembukuan Dasar
-- [ ] Jurnal transaksi otomatis
-- [ ] Buku kas & bank
-- [ ] Buku besar
-- [ ] Neraca saldo
-- [ ] Laba rugi / SHU
-- [ ] Neraca
+- [x] Jurnal transaksi otomatis
+- [x] Buku kas & bank
+- [x] Buku besar
+- [x] Neraca saldo
+- [x] Laba rugi / SHU
+- [x] Neraca
 - [ ] Arus kas
 
 > Pembukuan **hanya di backoffice** — ini adalah aplikasi internal koperasi.
@@ -76,12 +76,12 @@
 ### 9. Dashboard & Analytics
 - [x] Total anggota, simpanan, pinjaman, SHU
 - [x] Grafik pertumbuhan
-- [ ] Indikator kesehatan (rasio likuiditas, solvabilitas)
+- [x] Indikator kesehatan (rasio likuiditas, solvabilitas)
 - [x] Aktivitas terkini
 
 ### 10. Manajemen Pengguna
 - [ ] CRUD pengurus & karyawan
-- [ ] Log aktivitas & audit trail
+- [x] Log aktivitas & audit trail
 - [ ] Ganti password akun sendiri
 
 ---
@@ -142,4 +142,4 @@
 
 ---
 
-*Dokumen ini diupdate 12 Mei 2026 — mobile app dihapus, fokus 100% backoffice.*
+*Dokumen ini diupdate 12 Mei 2026 — Phase 1 MVP selesai, siap masuk Phase 2.*

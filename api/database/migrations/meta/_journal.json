@@ -15,6 +15,20 @@
       "when": 1778578828755,
       "tag": "0001_true_millenium_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1778597383541,
+      "tag": "0002_nappy_masque",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1778597527124,
+      "tag": "0003_small_chat",
+      "breakpoints": true
     }
   ]
 }

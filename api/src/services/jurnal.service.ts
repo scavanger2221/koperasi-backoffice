@@ -202,6 +202,187 @@ export async function listJurnal({
   return { data: result, meta: { page, limit, total } };
 }
 
+export async function getBukuBesar({
+  akunId,
+  page = 1,
+  limit = 50,
+  tanggalMulai,
+  tanggalSelesai,
+}: {
+  akunId: string;
+  page?: number;
+  limit?: number;
+  tanggalMulai?: string;
+  tanggalSelesai?: string;
+}) {
+  const offset = (page - 1) * limit;
+
+  let whereClause = `WHERE jd.akun_id = '${akunId}'`;
+  if (tanggalMulai && tanggalSelesai) {
+    whereClause += ` AND j.tanggal >= '${tanggalMulai}' AND j.tanggal <= '${tanggalSelesai}'`;
+  }
+
+  const akunInfo = await db.select().from(akun).where(eq(akun.id, akunId)).get();
+
+  const countRow = db.get<{ total: number }>(sql`
+    SELECT COUNT(*) as total
+    FROM jurnal_detail jd
+    INNER JOIN jurnal j ON jd.jurnal_id = j.id
+    ${sql.raw(whereClause)}
+  `);
+
+  const allRows = db.all<{ id: string; tanggal: string; noJurnal: string; keterangan: string; debit: string; kredit: string }>(sql`
+    SELECT j.id, j.tanggal, j.no_jurnal as noJurnal, j.keterangan,
+           jd.debit, jd.kredit
+    FROM jurnal_detail jd
+    INNER JOIN jurnal j ON jd.jurnal_id = j.id
+    ${sql.raw(whereClause)}
+    ORDER BY j.tanggal ASC, j.created_at ASC
+  `);
+
+  let saldo = 0;
+  const withSaldo = allRows.map((r) => {
+    saldo += Number(r.debit) - Number(r.kredit);
+    return { ...r, saldo };
+  });
+
+  const total = Number(countRow?.total ?? 0);
+
+  // Apply pagination to reversed data (newest first)
+  const data = withSaldo.reverse().slice(offset, offset + limit);
+
+  return { data, meta: { page, limit, total }, akun: akunInfo };
+}
+
+export async function getNeracaSaldo() {
+  const allAkun = await db.select().from(akun).where(eq(akun.aktif, true));
+  const result = [];
+
+  for (const a of allAkun) {
+    const rows = db.all<{ debit: string; kredit: string }>(sql`
+      SELECT SUM(CAST(jd.debit AS INTEGER)) as debit,
+             SUM(CAST(jd.kredit AS INTEGER)) as kredit
+      FROM jurnal_detail jd
+      WHERE jd.akun_id = ${a.id}
+    `);
+    const row = rows[0];
+    const totalDebit = Number(row?.debit ?? 0);
+    const totalKredit = Number(row?.kredit ?? 0);
+
+    // Saldo = debit - kredit (if saldo normal debit)
+    // Saldo = kredit - debit (if saldo normal kredit)
+    let saldo = 0;
+    if (a.saldoNormal === "debit") {
+      saldo = totalDebit - totalKredit;
+    } else {
+      saldo = totalKredit - totalDebit;
+    }
+
+    result.push({
+      akun: a,
+      debit: totalDebit,
+      kredit: totalKredit,
+      saldo,
+    });
+  }
+
+  const totalDebit = result.reduce((s, r) => s + r.debit, 0);
+  const totalKredit = result.reduce((s, r) => s + r.kredit, 0);
+
+  return { data: result, totalDebit, totalKredit };
+}
+
+export async function getLabaRugi({
+  tanggalMulai,
+  tanggalSelesai,
+}: {
+  tanggalMulai?: string;
+  tanggalSelesai?: string;
+}) {
+  let whereClause = "";
+  if (tanggalMulai && tanggalSelesai) {
+    whereClause = `AND j.tanggal >= '${tanggalMulai}' AND j.tanggal <= '${tanggalSelesai}'`;
+  }
+
+  const pendapatanAkun = await db.select().from(akun).where(eq(akun.tipe, "pendapatan"));
+  const biayaAkun = await db.select().from(akun).where(eq(akun.tipe, "biaya"));
+
+  const pendapatan = [];
+  for (const a of pendapatanAkun) {
+    const rows = db.all<{ total: string }>(sql`
+      SELECT SUM(CAST(jd.kredit AS INTEGER)) - SUM(CAST(jd.debit AS INTEGER)) as total
+      FROM jurnal_detail jd
+      INNER JOIN jurnal j ON jd.jurnal_id = j.id
+      WHERE jd.akun_id = ${a.id} ${sql.raw(whereClause)}
+    `);
+    const total = Number(rows[0]?.total ?? 0);
+    if (total !== 0) pendapatan.push({ akun: a, total });
+  }
+
+  const biaya = [];
+  for (const a of biayaAkun) {
+    const rows = db.all<{ total: string }>(sql`
+      SELECT SUM(CAST(jd.debit AS INTEGER)) - SUM(CAST(jd.kredit AS INTEGER)) as total
+      FROM jurnal_detail jd
+      INNER JOIN jurnal j ON jd.jurnal_id = j.id
+      WHERE jd.akun_id = ${a.id} ${sql.raw(whereClause)}
+    `);
+    const total = Number(rows[0]?.total ?? 0);
+    if (total !== 0) biaya.push({ akun: a, total });
+  }
+
+  const totalPendapatan = pendapatan.reduce((s, r) => s + r.total, 0);
+  const totalBiaya = biaya.reduce((s, r) => s + r.total, 0);
+  const labaRugi = totalPendapatan - totalBiaya;
+
+  return {
+    pendapatan,
+    biaya,
+    totalPendapatan,
+    totalBiaya,
+    labaRugi,
+    isProfit: labaRugi >= 0,
+  };
+}
+
+export async function getNeraca() {
+  const asetAkun = await db.select().from(akun).where(eq(akun.tipe, "aset"));
+  const kewajibanAkun = await db.select().from(akun).where(eq(akun.tipe, "kewajiban"));
+  const ekuitasAkun = await db.select().from(akun).where(eq(akun.tipe, "ekuitas"));
+
+  const getSaldo = (a: typeof akun.$inferSelect) => {
+    const rows = db.all<{ debit: string; kredit: string }>(sql`
+      SELECT SUM(CAST(jd.debit AS INTEGER)) as debit,
+             SUM(CAST(jd.kredit AS INTEGER)) as kredit
+      FROM jurnal_detail jd
+      WHERE jd.akun_id = ${a.id}
+    `);
+    const row = rows[0];
+    const d = Number(row?.debit ?? 0);
+    const k = Number(row?.kredit ?? 0);
+    return a.saldoNormal === "debit" ? d - k : k - d;
+  };
+
+  const aset = asetAkun.map((a) => ({ akun: a, saldo: getSaldo(a) })).filter((r) => r.saldo !== 0);
+  const kewajiban = kewajibanAkun.map((a) => ({ akun: a, saldo: getSaldo(a) })).filter((r) => r.saldo !== 0);
+  const ekuitas = ekuitasAkun.map((a) => ({ akun: a, saldo: getSaldo(a) })).filter((r) => r.saldo !== 0);
+
+  const totalAset = aset.reduce((s, r) => s + r.saldo, 0);
+  const totalKewajiban = kewajiban.reduce((s, r) => s + r.saldo, 0);
+  const totalEkuitas = ekuitas.reduce((s, r) => s + r.saldo, 0);
+
+  return {
+    aset,
+    kewajiban,
+    ekuitas,
+    totalAset,
+    totalKewajiban,
+    totalEkuitas,
+    totalLiabilitasEkuitas: totalKewajiban + totalEkuitas,
+    balanced: totalAset === totalKewajiban + totalEkuitas,
+  };
+}
+
 export async function getBukuKas({
   page = 1,
   limit = 50,

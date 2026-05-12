@@ -42,4 +42,21 @@ export const pinjamanController = {
     const result = await pinjamanService.bayarAngsuran(body);
     return c.json({ success: true, data: result });
   },
+
+  async kolektibilitas(c: Context) {
+    const id = c.req.param("id")!;
+    const result = await pinjamanService.getKolektibilitas(id);
+    const labels = ["", "Lancar", "Kurang Lancar", "Diragukan", "Macet"];
+    return c.json({ success: true, data: { kolektibilitas: result, label: labels[result] } });
+  },
+
+  async kolektibilitasSummary(c: Context) {
+    const result = await pinjamanService.getKolektibilitasSummary();
+    return c.json({ success: true, data: result });
+  },
+
+  async cekDenda(c: Context) {
+    const result = await pinjamanService.cekDanUpdateDenda();
+    return c.json({ success: true, data: result });
+  },
 };

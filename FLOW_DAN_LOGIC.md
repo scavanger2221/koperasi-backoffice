@@ -7,12 +7,15 @@
 2. [Flow Simpanan](#2-flow-simpanan)
 3. [Flow Pinjaman](#3-flow-pinjaman)
 4. [Flow Angsuran & Denda](#4-flow-angsuran--denda)
-5. [Flow SHU (Sisa Hasil Usaha)](#5-flow-shu)
-6. [Flow RAT (Rapat Anggota Tahunan)](#6-flow-rat)
-7. [Flow Pembukuan / Jurnal](#7-flow-pembukuan)
-8. [Logic Perhitungan](#8-logic-perhitungan)
-9. [State Machine Semua Entity](#9-state-machine)
-10. [Data Flow Diagram](#10-data-flow-diagram)
+5. [Flow Tagihan Simpanan Wajib](#5-flow-tagihan-simpanan-wajib)
+6. [Flow SHU (Sisa Hasil Usaha)](#6-flow-shu)
+7. [Flow RAT (Rapat Anggota Tahunan)](#7-flow-rat)
+8. [Flow Pembukuan / Jurnal](#8-flow-pembukuan)
+9. [Logic Perhitungan](#9-logic-perhitungan)
+10. [State Machine Semua Entity](#10-state-machine)
+11. [Data Flow Diagram](#11-data-flow-diagram)
+
+> **Status Implementasi:** Phase 1 MVP ✅ — Semua flow sampai Pembukuan sudah diimplementasi. SHU, RAT, dan Unit Usaha masih Phase 2.
 
 ---
 
@@ -314,7 +317,48 @@ Kolektibilitas 4: Macet (>180 hari telat)
 
 ---
 
-## 5. Flow SHU
+## 5. Flow Tagihan Simpanan Wajib
+
+### Auto-Generate Tagihan Bulanan
+```
+TRIGGER: Admin klik "Generate Tagihan" atau cron job tanggal 1
+UNTUK setiap anggota yg AKTIF:
+    JIKA belum ada tagihan untuk periode ini:
+        → BUAT tagihan simpanan wajib
+        → Status: BELUM_BAYAR
+        → Jumlah: sesuai aturan koperasi
+    JIKA sudah ada:
+        → SKIP (ga bikin duplicate)
+```
+
+### Flow Pembayaran Tagihan
+```
+Admin klik "Bayar" di daftar tagihan
+    → UPDATE status: LUNAS
+    → SET tanggal_bayar = hari ini
+    → AUTO-CREATE jurnal: Debit Kas, Kredit Simpanan Wajib
+    → Tampilkan konfirmasi
+```
+
+### Cek Tunggakan Otomatis
+```
+TRIGGER: Admin klik "Cek Tunggakan" atau cron job
+UNTUK semua tagihan dengan status BELUM_BAYAR:
+    JIKA periode tagihan < periode sekarang:
+        → UPDATE status: TUNGGAKAN
+        → Tampilkan di laporan tunggakan
+```
+
+### Status Tagihan
+```
+BELUM_BAYAR → dibayar → LUNAS
+BELUM_BAYAR → lewat periode → TUNGGAKAN
+TUNGGAKAN → dibayar → LUNAS
+```
+
+---
+
+## 6. Flow SHU
 
 ```mermaid
 graph TD
@@ -427,7 +471,7 @@ function hitungSHU(periodeId):
 
 ---
 
-## 6. Flow RAT
+## 7. Flow RAT
 
 ```mermaid
 graph TD
@@ -485,7 +529,7 @@ Pengesahan SHU: hanya bisa setelah RAT menyetujui
 
 ---
 
-## 7. Flow Pembukuan
+## 8. Flow Pembukuan
 
 ```mermaid
 graph TD
@@ -540,7 +584,7 @@ graph TD
 
 ---
 
-## 8. Logic Perhitungan
+## 9. Logic Perhitungan
 
 ### 8.1 Saldo Simpanan
 ```
@@ -596,7 +640,7 @@ Partisipasi Anggota = (TotalTransaksiAnggota / TotalTransaksi) × 100%
 
 ---
 
-## 9. State Machine
+## 10. State Machine
 
 ### Anggota
 ```
@@ -639,7 +683,7 @@ VOTING ── tidak quorum ──▶ DIPERPANJANG
 
 ---
 
-## 10. Data Flow Diagram
+## 11. Data Flow Diagram
 
 ```mermaid
 graph TD
@@ -746,3 +790,7 @@ graph TD
 ---
 
 > **Catatan:** Flow di atas bisa berubah sesuai AD/ART masing-masing koperasi. Semua parameter (bunga, denda, alokasi SHU, limit approval) harus bisa dikonfigurasi via pengaturan.
+
+---
+
+*Dokumen ini diupdate 12 Mei 2026 — Phase 1 MVP complete (Anggota, Simpanan, Pinjaman, Pembukuan, Tagihan, Audit Log). Phase 2: SHU, RAT, Unit Usaha.*

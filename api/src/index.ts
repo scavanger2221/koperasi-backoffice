@@ -10,6 +10,8 @@ import { simpananRoute } from "./routes/simpanan.route.js";
 import { pinjamanRoute } from "./routes/pinjaman.route.js";
 import { dashboardRoute } from "./routes/dashboard.route.js";
 import { jurnalRoute } from "./routes/jurnal.route.js";
+import { tagihanRoute } from "./routes/tagihan.route.js";
+import { auditRoute } from "./routes/audit.route.js";
 
 const app = new Hono();
 
@@ -24,6 +26,8 @@ app.route("/api/simpanan", simpananRoute);
 app.route("/api/pinjaman", pinjamanRoute);
 app.route("/api/dashboard", dashboardRoute);
 app.route("/api/jurnal", jurnalRoute);
+app.route("/api/tagihan", tagihanRoute);
+app.route("/api/audit", auditRoute);
 
 app.onError(errorHandler);
 
