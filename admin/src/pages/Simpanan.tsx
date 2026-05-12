@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
 import { formatRupiah, formatDate } from "@/lib/utils";
+import { useToast } from "@/hooks/useToast";
 
 interface SimpananItem {
   id: string;
@@ -43,6 +44,7 @@ const jenisColors: Record<string, string> = {
 export default function SimpananPage() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: ["simpanan"],
@@ -59,7 +61,9 @@ export default function SimpananPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simpanan"] });
       setOpen(false);
+      toast("Setoran berhasil dicatat", "success");
     },
+    onError: () => toast("Gagal mencatat setoran", "error"),
   });
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

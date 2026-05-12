@@ -1,173 +1,145 @@
-# Fitur App Backoffice Koperasi — PWA Monorepo
+# Fitur App Backoffice Koperasi
 
-**2 View:**
-- **📱 Mobile (Anggota)** — PWA diinstall di HP anggota. Buat cek saldo, ajukan pinjaman, bayar angsuran, lihat SHU.
-- **💻 Desktop (Admin/Pengurus)** — Web dashboard. Buat kelola anggota, transaksi, laporan, RAT.
+**Backoffice-only.** Tidak ada aplikasi terpisah untuk anggota. Semua operasional koperasi ditangani di dashboard admin oleh pengurus, bendahara, dan admin.
 
 ---
 
 ## 🔵 FASE 1: MVP (Core)
 
 ### 1. Manajemen Anggota
-| Mobile (Anggota) | Desktop (Admin) |
-|-|-|
-| Daftar jadi anggota | ✅ CRUD data anggota |
-| Lihat profil sendiri | ✅ Verifikasi & approve pendaftaran |
-| Kartu anggota digital (QR) | ✅ Cetak kartu anggota |
-| — | ✅ Atur status (aktif/nonaktif/keluar) |
-| — | ✅ Riwayat aktivitas per anggota |
+- [x] CRUD data anggota
+- [x] Verifikasi & approve pendaftaran
+- [x] Cetak kartu anggota (PDF)
+- [x] Atur status (aktif/nonaktif/keluar)
+- [x] Riwayat aktivitas per anggota
+- [x] Detail anggota: simpanan, pinjaman, SHU
 
 ### 2. Simpanan
-| Mobile (Anggota) | Desktop (Admin) |
-|-|-|
-| ✅ Lihat saldo & mutasi | ✅ Catat setoran tunai |
-| ✅ Riwayat simpanan | ✅ Kelola simpanan pokok, wajib, sukarela |
-| ✅ Notifikasi jatuh tempo simpanan wajib | ✅ Kelola deposito |
-| — | ✅ Rekonsiliasi transfer masuk |
-| — | ✅ Laporan simpanan harian/bulanan |
+- [x] Catat setoran tunai/transfer
+- [x] Kelola simpanan pokok, wajib, sukarela
+- [x] Kelola deposito berjangka
+- [x] Riwayat & mutasi simpanan
+- [x] Auto-tagihan simpanan wajib bulanan
+- [x] Laporan simpanan harian/bulanan
 
 ### 3. Pinjaman
-| Mobile (Anggota) | Desktop (Admin) |
-|-|-|
-| ✅ Ajukan pinjaman (form) | ✅ Lihat & proses pengajuan |
-| ✅ Cek status pengajuan | ✅ Approval bertingkat |
-| ✅ Lihat jadwal angsuran | ✅ Pencairan pinjaman |
-| ✅ Bayar angsuran (via transfer/QRIS) | ✅ Catat angsuran tunai |
-| ✅ Sisa pinjaman + grafik | ✅ Hitung denda otomatis |
-| — | ✅ Atur jenis bunga (flat, efektif, anuitas, syariah) |
-| — | ✅ Laporan pinjaman & kolektibilitas |
+- [x] Input pengajuan pinjaman (oleh admin)
+- [x] Approval bertingkat (admin → pengurus → bendahara)
+- [x] Pencairan pinjaman + generate jadwal angsuran
+- [x] Catat pembayaran angsuran
+- [x] Hitung denda keterlambatan otomatis
+- [x] Atur jenis bunga (flat, efektif, anuitas, syariah)
+- [x] Kolektibilitas & laporan pinjaman
 
-### 4. Pembukuan
-| Mobile | Desktop |
-|-|-|
-| — | ✅ Jurnal transaksi otomatis |
-| — | ✅ Buku kas & bank |
-| — | ✅ Buku besar |
-| — | ✅ Neraca saldo |
-| — | ✅ Laba rugi / SHU |
-| — | ✅ Neraca |
-| — | ✅ Arus kas |
+### 4. Pembukuan Dasar
+- [ ] Jurnal transaksi otomatis
+- [ ] Buku kas & bank
+- [ ] Buku besar
+- [ ] Neraca saldo
+- [ ] Laba rugi / SHU
+- [ ] Neraca
+- [ ] Arus kas
 
-> Pembukuan **hanya di desktop** — terlalu kompleks untuk mobile anggota.
+> Pembukuan **hanya di backoffice** — ini adalah aplikasi internal koperasi.
 
 ### 5. Role & Akses
-| Mobile | Desktop |
-|-|-|
-| ✅ Login (email/telepon + password) | ✅ Multi-level role |
-| ✅ 2FA (opsional) | ✅ RBAC per modul |
-| ✅ Lupa password | ✅ CRUD pengguna & hak akses |
-| — | ✅ Log aktivitas & audit trail |
+- [x] Multi-level role (super_admin, admin, pengurus, bendahara, pengawas)
+- [x] RBAC per modul
+- [x] Login via email + password
+- [x] Log aktivitas & audit trail
 
 ---
 
 ## 🟡 FASE 2: Standard
 
 ### 6. SHU (Sisa Hasil Usaha)
-| Mobile (Anggota) | Desktop (Admin) |
-|-|-|
-| ✅ Lihat SHU yang diterima | ✅ Hitung SHU otomatis dari data tahun buku |
-| ✅ Rincian JMA + JUA | ✅ Atur alokasi proporsi |
-| ✅ Riwayat SHU tahun lalu | ✅ Preview & approval SHU |
-| — | ✅ Buku SHU per anggota |
-| — | ✅ Export daftar SHU |
+- [ ] Hitung SHU otomatis dari data tahun buku
+- [ ] Atur alokasi proporsi (anggota, cadangan, pengurus, dll)
+- [ ] JMA + JUA (detail per anggota)
+- [ ] Buku SHU per anggota
+- [ ] Preview & approval SHU
+- [ ] Export daftar SHU (PDF/XLSX)
 
 ### 7. RAT (Rapat Anggota Tahunan)
-| Mobile (Anggota) | Desktop (Admin) |
-|-|-|
-| ✅ Akses undangan RAT | ✅ Generate laporan keuangan RAT |
-| ✅ Lihat dokumen RAT (PDF) | ✅ Template RAT digital |
-| ✅ Voting online (e-RAT) | ✅ Notulen otomatis |
-| ✅ Suara real-time | ✅ Export PDF / XLSX |
-| — | ✅ Arsip RAT tahunan |
+- [ ] Generate laporan keuangan RAT
+- [ ] Template RAT digital
+- [ ] Arsip RAT tahunan
+- [ ] Export PDF / XLSX
 
 ### 8. Unit Usaha
-| Mobile | Desktop |
-|-|-|
-| — | ✅ **Toko**: POS, barcode, stok, kasir |
-| — | ✅ **PPOB**: Listrik, PDAM, BPJS, pulsa, token |
-| — | ✅ **Jasa**: booking & pembayaran |
-| — | ✅ Manajemen stok & supplier |
-| — | ✅ Multi-unit dalam 1 dashboard |
-
-> Operasional unit usaha **desktop-only**. Mobile anggota bisa lihat produk & belanja (Fase 3 marketplace).
+- [ ] **Toko**: POS, barcode, stok, kasir
+- [ ] **PPOB**: Listrik, PDAM, BPJS, pulsa, token
+- [ ] **Jasa**: booking & pembayaran
+- [ ] Manajemen stok & supplier
+- [ ] Multi-unit dalam 1 dashboard
 
 ### 9. Dashboard & Analytics
-| Mobile (Anggota) | Desktop (Admin) |
-|-|-|
-| ✅ SHU & saldo ringkasan | ✅ Total anggota, simpanan, pinjaman, SHU |
-| ✅ Aktivitas terakhir | ✅ Grafik pertumbuhan |
-| — | ✅ Indikator kesehatan (rasio likuiditas, solvabilitas) |
-| — | ✅ Aktivitas terkini & notifikasi real-time |
+- [x] Total anggota, simpanan, pinjaman, SHU
+- [x] Grafik pertumbuhan
+- [ ] Indikator kesehatan (rasio likuiditas, solvabilitas)
+- [x] Aktivitas terkini
 
 ### 10. Manajemen Pengguna
-| Mobile | Desktop |
-|-|-|
-| — | ✅ CRUD pengurus & karyawan |
-| — | ✅ Log aktivitas & audit trail |
-| — | ✅ Ganti password akun sendiri |
+- [ ] CRUD pengurus & karyawan
+- [ ] Log aktivitas & audit trail
+- [ ] Ganti password akun sendiri
 
 ---
 
 ## 🔴 FASE 3: Advanced
 
 ### 11. Pembayaran Digital
-| Mobile (Anggota) | Desktop (Admin) |
-|-|-|
-| ✅ Bayar via QRIS scan | ✅ Konfigurasi payment gateway |
-| ✅ Bayar via virtual account | ✅ Riwayat transaksi digital |
-| ✅ Auto-debet simpanan wajib | ✅ Rekonsiliasi otomatis |
-| ✅ Pilih e-wallet (GoPay/OVO/DANA/ShopeePay) | — |
+- [ ] Konfigurasi payment gateway
+- [ ] Riwayat transaksi digital
+- [ ] Rekonsiliasi otomatis
+- [ ] Auto-debet simpanan wajib
 
 ### 12. E-Commerce / Marketplace
-| Mobile (Anggota) | Desktop (Admin) |
-|-|-|
-| ✅ Toko online — lihat & beli produk | ✅ Kelola produk & stok |
-| ✅ Keranjang & checkout | ✅ Atur harga & diskon |
-| ✅ Bayar via saldo simpanan / transfer | ✅ Kelola pesanan |
-| — | ✅ Manajemen kurir/pengiriman |
+- [ ] Kelola produk & stok
+- [ ] Atur harga & diskon
+- [ ] Kelola pesanan
+- [ ] Manajemen kurir/pengiriman
 
 ### 13. AI & Smart Features
-| Mobile | Desktop |
-|-|-|
-| — | ✅ Deteksi transaksi mencurigakan |
-| — | ✅ Prediksi risiko kredit anggota |
-| — | ✅ Forecasting SHU & kesehatan koperasi |
-| ✅ Rekomendasi produk pinjaman (push notif) | — |
+- [ ] Deteksi transaksi mencurigakan
+- [ ] Prediksi risiko kredit anggota
+- [ ] Forecasting SHU & kesehatan koperasi
 
 ### 14. Integrasi Eksternal
-| Mobile | Desktop |
+- [ ] Open API (REST)
+- [ ] Webhook konfigurasi
+- [ ] Export data (CSV, XLSX, PDF)
+- [ ] Sinkronisasi Dinas Koperasi daerah
+
+---
+
+## 🟣 Teknis
+
+| Fitur | Backoffice Admin |
 |-|-|
-| — | ✅ Open API (REST/GraphQL) |
-| ✅ Notifikasi push dari webhook | ✅ Webhook konfigurasi |
-| — | ✅ Export data (CSV, XLSX, PDF) |
-| — | ✅ Sinkronisasi Dinas Koperasi daerah |
-| — | ✅ Koneksi BPJS Kesehatan (kopdes) |
+| Responsive layout | ✅ Desktop-first, works on tablet |
+| PWA (installable) | ⚠️ Optional — add to home screen |
+| Push notification | ✅ Aktivitas perlu approval |
+| Print (kartu, bukti, laporan) | ✅ Wajib — semua dokumen bisa dicetak |
+| Export PDF/Excel | ✅ Wajib — laporan keuangan |
+| Scan QR code | ✅ Scan kartu anggota |
+| Dark mode | ✅ Wajib |
 
 ---
 
-## 🟣 PWA / Teknis
+## 🎯 Prioritas Fitur
 
-| Fitur | Mobile (Anggota) | Desktop (Admin) |
-|-|-|-|
-| Offline-first cache data kritikal | ✅ Wajib — koneksi desa lemot | ⚠️ Nice-to-have |
-| Installable (add to home screen) | ✅ Wajib | ✅ Optional |
-| Push notification | ✅ Tagihan, jatuh tempo | ✅ Aktivitas perlu approval |
-| Background sync | ✅ Simpan data offline, sync pas online | — |
-| Scan QR code | ✅ Pembayaran, kartu anggota | ✅ Scan kartu anggota |
-| Responsive layout | ✅ Mobile-first | ✅ Desktop-first |
+| Priority | Modul | Kenapa |
+|----------|-------|--------|
+| **P1** | Anggota, Simpanan, Pinjaman, Buku Kas | Core bisnis — tanpa ini bukan koperasi |
+| **P1** | Role & akses multi-level | Wajib buat backoffice |
+| **P2** | SHU otomatis | Hitungan rumit, harus akurat tiap tahun |
+| **P2** | Laporan & RAT | Wajib hukumnya tiap tahun |
+| **P2** | Dashboard analytics | Biar pengurus percaya data |
+| **P3** | Multi-unit (toko, PPOB) | Scale up bisnis |
+| **P3** | Pembayaran digital | Biar ga ketinggalan jaman |
+| **P4** | AI, Marketplace, API | Future-proof |
 
 ---
 
-## 🎯 Prioritas Fitur (Rekomendasi)
-
-| Priority | Modul | Mobile | Desktop | Kenapa |
-|----------|-------|--------|---------|--------|
-| **P1** | Anggota, Simpanan, Pinjaman, Buku Kas | ✅ | ✅ | Core bisnis — tanpa ini bukan koperasi |
-| **P1** | PWA offline + installable | ✅ | — | **Pembeda utama** dari semua kompetitor |
-| **P1** | Role & akses multi-level | — | ✅ | Wajib buat backoffice |
-| **P2** | SHU otomatis | Lihat | ✅ | Hitungan rumit, harus akurat tiap tahun |
-| **P2** | Laporan & RAT | Lihat | ✅ | Wajib hukumnya tiap tahun |
-| **P2** | Dashboard analytics | ✅ | ✅ | Biar anggota & pengurus percaya |
-| **P3** | Multi-unit (toko, PPOB) | — | ✅ | Scale up bisnis |
-| **P3** | Pembayaran digital | ✅ | ✅ | Biar ga ketinggalan jaman |
-| **P4** | AI, Marketplace, API | — | ✅ | Future-proof |
+*Dokumen ini diupdate 12 Mei 2026 — mobile app dihapus, fokus 100% backoffice.*

@@ -10,7 +10,7 @@ Sebelum nulis kode, **WAJIB** baca:
 
 1. **`ARCHITECTURE.md`** — Stack, struktur, schema, API routes
 2. **`FLOW_DAN_LOGIC.md`** — Flow bisnis, logic perhitungan, state machine
-3. **`RESEARCH_KOPERASI_FEATURES.md`** — Fitur split mobile/desktop
+3. **`RESEARCH_KOPERASI_FEATURES.md`** — Fitur backoffice (anggota, simpanan, pinjaman, SHU, dll)
 4. **Existing code** — Lihat pola yang udah ada, jangan bikin sendiri
 
 **JANCOK: Kalo ga baca, kode lu bakal gw reject.**
@@ -21,8 +21,7 @@ Sebelum nulis kode, **WAJIB** baca:
 
 | Layer | Teknologi | Wajib? |
 |-------|-----------|--------|
-| Frontend Mobile | React + Vite + PWA | ✅ |
-| Frontend Admin | React + Vite | ✅ |
+| Frontend Admin | React + Vite + PWA (optional) | ✅ |
 | API Backend | Hono + Node.js | ✅ |
 | Database | SQLite (better-sqlite3) | ✅ |
 | ORM | Drizzle | ✅ |
@@ -53,14 +52,7 @@ koperasi-backoffice/
 │   │   └── schema/      # Drizzle schema definitions
 │   └── package.json
 │
-├── mobile/              # PWA Anggota
-│   └── src/
-│       ├── pages/       # React Router pages
-│       ├── components/  # UI components
-│       ├── hooks/       # Custom hooks
-│       └── lib/         # API client, store
-│
-├── admin/               # Admin Dashboard
+├── admin/               # Admin Dashboard (backoffice-only)
 │   └── src/ […same…]
 │
 └── shared/              # Shared types & schemas
@@ -70,8 +62,8 @@ koperasi-backoffice/
 ```
 
 ### Aturan Folder:
-- **Ini monorepo simple** — 4 project (`api/`, `mobile/`, `admin/`, `shared/`) dalam 1 repo.
-- **Jangan bikin folder `apps/` atau `packages/`** — langsung `api/`, `mobile/`, dll.
+- **Ini monorepo simple** — 3 project (`api/`, `admin/`, `shared/`) dalam 1 repo.
+- **Jangan bikin folder `apps/` atau `packages/`** — langsung `api/`, `admin/`, `shared`.
 - **Routes harus tipis** — logic di services, routes cuma manggil.
 - **Controllers harus tipis** — parse request, validasi, panggil service, return response.
 
@@ -153,7 +145,7 @@ Root `package.json`:
 {
   "name": "koperasi-backoffice",
   "private": true,
-  "workspaces": ["api", "mobile", "admin", "shared"]
+  "workspaces": ["api", "admin", "shared"]
 }
 ```
 
@@ -174,7 +166,7 @@ Cara jalan:
 ```bash
 npm install -g turbo    # sekali doang
 npm install
-turbo dev               # Jalanin API + Mobile + Admin BERSAMAAN
+turbo dev               # Jalanin API + Admin BERSAMAAN
 ```
 
 ```typescript
@@ -243,24 +235,23 @@ function useAnggota(id: string) {
 
 ---
 
-## 📱 PWA RULES
+## 📱 PWA (Optional — Admin Only)
 
-### Service Worker
+> Admin dashboard bisa di-install sebagai PWA. Tidak ada app terpisah untuk anggota.
+
+### Service Worker (Production Only)
 - **Cache static assets** (app shell, css, js) pas install
-- **Cache-first** buat GET requests anggota (simpanan, pinjaman, profil)
-- **Network-first** buat POST/PATCH/PATCH (mutations)
-- **Fallback ke cache** kalo offline buat GET
-- **Tampilkan pesan** "Butuh koneksi internet" kalo offline & mau write
+- **Network-first** buat semua API requests
+- **Tampilkan pesan** "Butuh koneksi internet" kalo offline
 
 ### IndexedDB
 - Pake **Dexie.js** wrapper
-- Simpan cache data: `anggota`, `simpanan`, `pinjaman` (read-only offline)
+- Simpan cache data read-only: `anggota`, `simpanan`, `pinjaman`
 - Jangan simpan data sensitif (token, password) di IndexedDB
 
 ### Manifest
 - `display: standalone`
 - `theme_color: #16a34a` (green)
-- `orientation: portrait`
 
 ---
 

@@ -1,8 +1,9 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import crypto from "crypto";
 import { db } from "../lib/db.js";
 import { pinjaman, angsuran, anggota } from "../../database/schema/index.js";
+import { jurnalPinjamanCair, jurnalAngsuran } from "./jurnal.service.js";
 import type { PinjamanInput, AngsuranInput } from "@koperasi/shared/schemas";
 
 export class PinjamanService {
@@ -20,7 +21,7 @@ export class PinjamanService {
       .select()
       .from(pinjaman)
       .where(conditions)
-      .orderBy(eq(pinjaman.createdAt))
+      .orderBy(desc(pinjaman.createdAt))
       .limit(limit)
       .offset(offset);
 
@@ -96,11 +97,20 @@ export class PinjamanService {
     if (!p) throw new HTTPException(404, { message: "Pinjaman tidak ditemukan" });
     if (p.status !== "disetujui") throw new HTTPException(400, { message: "Pinjaman belum disetujui" });
 
+    const member = await db.select().from(anggota).where(eq(anggota.id, p.anggotaId)).get();
     const tanggalCair = new Date().toISOString().split("T")[0];
     await db
       .update(pinjaman)
       .set({ status: "aktif", tanggalPencairan: tanggalCair })
       .where(eq(pinjaman.id, id));
+
+    // Auto-create jurnal pencairan
+    await jurnalPinjamanCair({
+      pinjamanId: id,
+      anggotaNama: member?.nama || "-",
+      jumlah: Number(p.jumlah),
+      tanggal: tanggalCair,
+    });
 
     // Generate angsuran schedule (flat bunga)
     const jumlah = Number(p.jumlah);
@@ -132,6 +142,8 @@ export class PinjamanService {
     const p = await db.select().from(pinjaman).where(eq(pinjaman.id, data.pinjamanId)).get();
     if (!p) throw new HTTPException(404, { message: "Pinjaman tidak ditemukan" });
 
+    const member = await db.select().from(anggota).where(eq(anggota.id, p.anggotaId)).get();
+
     const angs = await db
       .select()
       .from(angsuran)
@@ -150,6 +162,18 @@ export class PinjamanService {
         metodeBayar: data.metodeBayar as any,
       })
       .where(eq(angsuran.id, angs.id));
+
+    // Auto-create jurnal angsuran
+    await jurnalAngsuran({
+      angsuranId: angs.id,
+      pinjamanId: data.pinjamanId,
+      anggotaNama: member?.nama || "-",
+      pokok: Number(angs.jumlahPokok),
+      bunga: Number(angs.jumlahBunga),
+      denda: Number(angs.denda),
+      tanggal: data.tanggalBayar,
+      metodeBayar: data.metodeBayar,
+    });
 
     // Check if all angsuran paid
     const remaining = await db

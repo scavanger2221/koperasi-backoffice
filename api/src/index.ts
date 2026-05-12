@@ -9,6 +9,7 @@ import { anggotaRoute } from "./routes/anggota.route.js";
 import { simpananRoute } from "./routes/simpanan.route.js";
 import { pinjamanRoute } from "./routes/pinjaman.route.js";
 import { dashboardRoute } from "./routes/dashboard.route.js";
+import { jurnalRoute } from "./routes/jurnal.route.js";
 
 const app = new Hono();
 
@@ -22,6 +23,7 @@ app.route("/api/anggota", anggotaRoute);
 app.route("/api/simpanan", simpananRoute);
 app.route("/api/pinjaman", pinjamanRoute);
 app.route("/api/dashboard", dashboardRoute);
+app.route("/api/jurnal", jurnalRoute);
 
 app.onError(errorHandler);
 

@@ -10,6 +10,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
+      devOptions: { enabled: false },
       manifest: {
         name: "Koperasi Backoffice",
         short_name: "Koperasi",

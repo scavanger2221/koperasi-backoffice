@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { HandCoins, Loader2, CheckCircle, Banknote, Eye, Plus, UserSearch } from "lucide-react";
+import { HandCoins, Loader2, CheckCircle, Banknote, Eye, Plus, UserSearch, Calendar, AlertCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +23,26 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import { formatRupiah } from "@/lib/utils";
+import { useToast } from "@/hooks/useToast";
+
+interface AngsuranItem {
+  id: string;
+  angsuranKe: number;
+  tanggalJatuhTempo: string;
+  tanggalBayar: string | null;
+  jumlahPokok: string;
+  jumlahBunga: string;
+  denda: string;
+  totalBayar: string;
+  status: string;
+  metodeBayar: string | null;
+}
+
+interface PinjamanDetail extends PinjamanItem {
+  angsuran: AngsuranItem[];
+  tanggalAcc: string | null;
+  tanggalPencairan: string | null;
+}
 
 interface PinjamanItem {
   id: string;
@@ -60,6 +80,7 @@ export default function PinjamanPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<PinjamanItem | null>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Form state
   const [form, setForm] = useState({
@@ -87,12 +108,20 @@ export default function PinjamanPage() {
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => api(`/api/pinjaman/${id}/approve`, { method: "PATCH" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pinjaman"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pinjaman"] });
+      toast("Pinjaman disetujui", "success");
+    },
+    onError: () => toast("Gagal menyetujui pinjaman", "error"),
   });
 
   const cairMutation = useMutation({
     mutationFn: (id: string) => api(`/api/pinjaman/${id}/cair`, { method: "PATCH" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pinjaman"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pinjaman"] });
+      toast("Pinjaman dicairkan", "success");
+    },
+    onError: () => toast("Gagal mencairkan pinjaman", "error"),
   });
 
   const createMutation = useMutation({
@@ -109,12 +138,36 @@ export default function PinjamanPage() {
         jenisBunga: "flat",
         keterangan: "",
       });
+      toast("Pinjaman berhasil diajukan", "success");
     },
+    onError: () => toast("Gagal mengajukan pinjaman", "error"),
+  });
+
+  const { data: detailQuery, isLoading: detailLoading } = useQuery({
+    queryKey: ["pinjaman-detail", selected?.id],
+    queryFn: () => api<{ data: PinjamanDetail }>(`/api/pinjaman/${selected!.id}`),
+    enabled: !!selected && detailOpen,
+  });
+
+  const bayarMutation = useMutation({
+    mutationFn: (body: { pinjamanId: string; tanggalBayar: string; metodeBayar: string }) =>
+      api("/api/pinjaman/bayar", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pinjaman"] });
+      queryClient.invalidateQueries({ queryKey: ["pinjaman-detail"] });
+      toast("Angsuran berhasil dibayar", "success");
+    },
+    onError: () => toast("Gagal membayar angsuran", "error"),
   });
 
   const openDetail = (p: PinjamanItem) => {
     setSelected(p);
     setDetailOpen(true);
+  };
+
+  const handleBayar = (pinjamanId: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    bayarMutation.mutate({ pinjamanId, tanggalBayar: today, metodeBayar: "tunai" });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -502,33 +555,132 @@ export default function PinjamanPage() {
       </Card>
 
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="border-0 shadow-xl max-w-md">
+        <DialogContent className="border-0 shadow-xl max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg">Detail Pinjaman</DialogTitle>
           </DialogHeader>
-          {selected && (
-            <div className="space-y-3 text-sm mt-2">
-              {[
-                { label: "No Pinjaman", value: selected.noPinjaman },
-                { label: "Anggota", value: selected.anggota?.nama || selected.anggotaId },
-                { label: "Jumlah", value: formatRupiah(selected.jumlah) },
-                { label: "Bunga", value: `${selected.bungaPersen}% / tahun` },
-                { label: "Tenor", value: `${selected.jangkaWaktu} bulan` },
-                { label: "Angsuran/Bulan", value: formatRupiah(selected.angsuranPerBulan) },
-              ].map((item) => (
-                <div key={item.label} className="flex justify-between py-2 border-b border-border/50">
-                  <span className="text-muted-foreground">{item.label}</span>
-                  <span className="font-medium text-foreground">{item.value}</span>
-                </div>
-              ))}
-              <div className="flex justify-between py-2">
-                <span className="text-muted-foreground">Status</span>
-                <Badge className={`${statusConfig[selected.status]?.className} font-medium text-[11px] px-2 py-0.5`} variant="outline">
-                  {statusConfig[selected.status]?.label}
-                </Badge>
-              </div>
+          {detailLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
-          )}
+          ) : detailQuery?.data ? (
+            <div className="space-y-4 mt-2">
+              {/* Info cards */}
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="p-2.5 rounded-lg bg-muted border border-border">
+                  <p className="text-[10px] text-muted-foreground uppercase">No Pinjaman</p>
+                  <p className="font-semibold text-foreground">{detailQuery.data.noPinjaman}</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-muted border border-border">
+                  <p className="text-[10px] text-muted-foreground uppercase">Anggota</p>
+                  <p className="font-semibold text-foreground">{detailQuery.data.anggota?.nama || "-"}</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-muted border border-border">
+                  <p className="text-[10px] text-muted-foreground uppercase">Jumlah</p>
+                  <p className="font-semibold text-foreground">{formatRupiah(detailQuery.data.jumlah)}</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-muted border border-border">
+                  <p className="text-[10px] text-muted-foreground uppercase">Angsuran/Bln</p>
+                  <p className="font-semibold text-foreground">{formatRupiah(detailQuery.data.angsuranPerBulan)}</p>
+                </div>
+              </div>
+
+              {/* Progress */}
+              {detailQuery.data.angsuran && detailQuery.data.angsuran.length > 0 && (
+                <div className="p-3 rounded-lg bg-card border border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-medium text-foreground">Progres Pembayaran</span>
+                    <span className="text-xs text-muted-foreground">
+                      {detailQuery.data.angsuran.filter((a) => a.status === "lunas").length} / {detailQuery.data.angsuran.length} angsuran
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-600 rounded-full transition-all"
+                      style={{
+                        width: `${(detailQuery.data.angsuran.filter((a) => a.status === "lunas").length / detailQuery.data.angsuran.length) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Angsuran schedule */}
+              {detailQuery.data.angsuran && detailQuery.data.angsuran.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                    Jadwal Angsuran
+                  </p>
+                  <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                    {detailQuery.data.angsuran.map((a) => {
+                      const isLate = a.status === "belum_lunas" && new Date(a.tanggalJatuhTempo) < new Date();
+                      return (
+                        <div
+                          key={a.id}
+                          className={`flex items-center justify-between p-2.5 rounded-lg border text-sm ${
+                            a.status === "lunas"
+                              ? "bg-emerald-950/20 border-emerald-900/30"
+                              : isLate
+                              ? "bg-red-950/20 border-red-900/30"
+                              : "bg-card border-border"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                              a.status === "lunas"
+                                ? "bg-emerald-600 text-white"
+                                : isLate
+                                ? "bg-red-600 text-white"
+                                : "bg-muted text-muted-foreground"
+                            }`}>
+                              {a.status === "lunas" ? <Check className="w-3 h-3" /> : a.angsuranKe}
+                            </div>
+                            <div>
+                              <p className="font-medium text-foreground">
+                                {formatRupiah(a.totalBayar)}
+                                {Number(a.denda) > 0 && (
+                                  <span className="text-red-400 text-xs ml-1">+ {formatRupiah(a.denda)} denda</span>
+                                )}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                Jatuh tempo: {new Date(a.tanggalJatuhTempo).toLocaleDateString("id-ID")}
+                                {a.tanggalBayar && (
+                                  <span className="text-emerald-400 ml-1">
+                                    · Dibayar: {new Date(a.tanggalBayar).toLocaleDateString("id-ID")}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          {a.status === "belum_lunas" && (
+                            <Button
+                              size="sm"
+                              className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                              onClick={() => handleBayar(detailQuery.data.id)}
+                              disabled={bayarMutation.isPending}
+                            >
+                              {bayarMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Bayar"}
+                            </Button>
+                          )}
+                          {a.status === "lunas" && (
+                            <span className="text-[10px] text-emerald-400 font-medium">Lunas</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {(!detailQuery.data.angsuran || detailQuery.data.angsuran.length === 0) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                  <AlertCircle className="w-4 h-4" />
+                  Jadwal angsuran belum dibuat. Cairkan pinjaman terlebih dahulu.
+                </div>
+              )}
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

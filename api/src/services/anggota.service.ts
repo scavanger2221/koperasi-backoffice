@@ -70,6 +70,12 @@ export class AnggotaService {
     return { id, status: "nonaktif" };
   }
 
+  async activate(id: string) {
+    await this.getById(id);
+    await db.update(anggota).set({ status: "aktif", tanggalKeluar: null }).where(eq(anggota.id, id));
+    return { id, status: "aktif" };
+  }
+
   private async generateNoAnggota() {
     const count = await db.$count(anggota);
     return `AG${String(count + 1).padStart(5, "0")}`;

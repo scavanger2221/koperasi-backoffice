@@ -6,4 +6,6 @@ export const dashboardRoute = new Hono()
   .use(authMiddleware)
   .use(requireRole(["admin", "pengurus", "bendahara", "pengawas"]))
   .get("/ringkasan", dashboardController.ringkasan)
+  .get("/simpanan-per-bulan", dashboardController.simpananPerBulan)
+  .get("/pinjaman-status", dashboardController.pinjamanStatus)
   .get("/aktivitas", dashboardController.aktivitas);

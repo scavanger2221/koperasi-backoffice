@@ -14,7 +14,7 @@ export const pinjamanController = {
   },
 
   async getById(c: Context) {
-    const id = c.req.param("id");
+    const id = c.req.param("id")!;
     const result = await pinjamanService.getById(id);
     return c.json({ success: true, data: result });
   },
@@ -26,13 +26,13 @@ export const pinjamanController = {
   },
 
   async approve(c: Context) {
-    const id = c.req.param("id");
+    const id = c.req.param("id")!;
     const result = await pinjamanService.approve(id);
     return c.json({ success: true, data: result });
   },
 
   async cairkan(c: Context) {
-    const id = c.req.param("id");
+    const id = c.req.param("id")!;
     const result = await pinjamanService.cairkan(id);
     return c.json({ success: true, data: result });
   },

@@ -20,29 +20,17 @@
 
 ```mermaid
 graph TD
-    A[Calon Anggota] --> B{Registrasi via?}
-    B --> C[Mobile App - Daftar Sendiri]
-    B --> D[Admin input manual]
-    
-    C --> E[Isi form: NIK, nama, alamat, pekerjaan, telp, email]
-    C --> F[Upload foto KTP]
-    C --> G[Submit → Status: MENUNGGU_VERIFIKASI]
-    
-    D --> H[Admin isi data lengkap]
-    D --> I[Admin upload scan KTP]
-    D --> J[Submit → Status: AKTIF langsung]
-    
-    G --> K[Admin lihat daftar pending]
-    K --> L{Verifikasi}
-    L --> M[Diterima → Status: AKTIF]
-    L --> N[Ditolak → Status: DITOLAK + alasan]
-    
-    M --> O[System generate: No Anggota]
-    M --> P[System catat: Simpanan Pokok = WAJIB_BAYAR]
-    M --> Q[Notif: Selamat datang + tagihan pokok]
-    
-    style M fill:#16a34a,color:#fff
-    style N fill:#dc2626,color:#fff
+    A[Calon Anggota] --> B[Admin input data lengkap]
+    B --> C[Upload scan KTP]
+    C --> D{Verifikasi}
+    D --> E[Submit → Status: AKTIF langsung]
+    D --> F[Ditolak → Status: DITOLAK + alasan]
+    E --> G[System generate: No Anggota]
+    E --> H[System catat: Simpanan Pokok = WAJIB_BAYAR]
+    E --> I[Print kartu anggota]
+
+    style E fill:#16a34a,color:#fff
+    style F fill:#dc2626,color:#fff
 ```
 
 ### Alur Detail
@@ -72,10 +60,8 @@ AKTIF → NONAKTIF (keluar/meninggal/dipecat)
 ```
 JIKA anggota daftar via admin:
     → Simpanan Pokok LANGSUNG dicatat (dibayar admin atau nunggu)
-JIKA anggota daftar via mobile:
-    → Simpanan Pokok jadi POSISI tagihan
-    → Anggota bayar nanti lewat setoran
-    → Tapi anggota udah AKTIF dulu (kebijakan)
+    → Status langsung AKTIF
+    → Cetak kartu anggota
 ```
 
 ---
@@ -123,13 +109,13 @@ graph TD
 TRIGGER: tiap tanggal 1
 UNTUK setiap anggota yg AKTIF:
     BUAT tagihan simpanan wajib bulan ini
-    KIRIM notifikasi push ke mobile
+    TAMPILKAN di dashboard admin (notifikasi badge)
 
 TRIGGER: tiap tanggal 10 (after due date)
     JIKA tagihan blm dibayar:
         → Status: TUNGGAKAN
-        → Kirim notifikasi peringatan
-        → Catat di laporan tunggakan
+        → Tampilkan di laporan tunggakan
+        → Kirim notifikasi ke admin
 
 PEMBAYARAN:
     Via tunai → admin catat langsung
@@ -157,36 +143,35 @@ Contoh:
 
 ```mermaid
 graph TD
-    A[Anggota ajukan pinjaman] --> B[Pilih jenis pinjaman]
-    B --> C[Isi: jumlah, tenor, keperluan, jaminan]
-    C --> D[Submit → Status: DIAJUKAN]
-    
-    D --> E[Admin/Pengurus review]
-    E --> F{Approval}
-    F --> G[Disetujui]
-    F --> H[Ditolak]
-    
-    G --> I[Menunggu pencairan]
-    I --> J[Bendahara cairkan]
-    J --> K[Status: AKTIF]
-    J --> L[Generate jadwal angsuran]
-    J --> M[Dana masuk ke rekening/tunai]
-    J --> N[Catat jurnal: Kas - Pinjaman]
-    
-    H --> O[Notif: ditolak + alasan]
-    
-    K --> P[Angsuran tiap bulan]
-    P --> Q{Lunas?}
-    Q --> R[Belum → Lanjut angsur]
-    Q --> S[Lunas → Status: LUNAS]
-    
-    S --> T{Ada tunggakan?}
-    T --> U[Tidak → Selesai]
-    T --> V[Ya → Catat di histori kredit macet]
-    
-    style G fill:#16a34a,color:#fff
-    style H fill:#dc2626,color:#fff
-    style S fill:#16a34a,color:#fff
+    A[Admin input pengajuan pinjaman] --> B[Isi: anggota, jumlah, tenor, keperluan, jaminan]
+    B --> C[Submit → Status: DIAJUKAN]
+
+    C --> D[Admin/Pengurus review]
+    D --> E{Approval}
+    E --> F[Disetujui]
+    E --> G[Ditolak]
+
+    F --> H[Menunggu pencairan]
+    H --> I[Bendahara cairkan]
+    I --> J[Status: AKTIF]
+    I --> K[Generate jadwal angsuran]
+    I --> L[Dana masuk ke rekening/tunai]
+    I --> M[Catat jurnal: Kas - Pinjaman]
+
+    G --> N[Catat alasan penolakan]
+
+    J --> O[Angsuran tiap bulan]
+    O --> P{Lunas?}
+    P --> Q[Belum → Lanjut angsur]
+    P --> R[Lunas → Status: LUNAS]
+
+    R --> S{Ada tunggakan?}
+    S --> T[Tidak → Selesai]
+    S --> U[Ya → Catat di histori kredit macet]
+
+    style F fill:#16a34a,color:#fff
+    style G fill:#dc2626,color:#fff
+    style R fill:#16a34a,color:#fff
 ```
 
 ### Status Pinjaman (State Machine Detail)
@@ -358,7 +343,7 @@ graph TD
     P --> Q[Preview SHU]
     Q --> R[Approval Pengurus]
     R --> S[Buku SHU per Anggota]
-    S --> T[Notif anggota: SHU udah bisa dilihat]
+    S --> T[Print daftar SHU / Export PDF]
 ```
 
 ### Logic Perhitungan SHU Detail
@@ -460,20 +445,20 @@ graph TD
     G --> I
     H --> I
     
-    I --> J[Publikasi ke anggota]
-    J --> K[Undangan: notif push ke mobile]
-    K --> L[Anggota akses dokumen RAT]
+    I --> J[Print / export dokumen RAT]
+    J --> K[Undangan ke anggota (cetak/digital)]
+    K --> L[RAT fisik/online]
     
-    L --> M[e-RAT: Voting online]
-    M --> N[Setuju → approve]
-    M --> O[Tidak setuju → beri saran]
+    L --> M[Voting / musyawarah]
+    M --> N[Setuju → catat keputusan]
+    M --> O[Tidak setuju → catat saran]
     
     N --> P{Quorum terpenuhi?}
     O --> P
     P --> Q[Ya → RAT sah]
-    P --> R[Tidak → perpanjang voting]
+    P --> R[Tidak → perpanjang/jadwal ulang]
     
-    Q --> S[Generate notulen otomatis]
+    Q --> S[Generate notulen]
     S --> T[Arsip RAT]
     T --> U[SHU bisa dibagikan setelah RAT disahkan]
 ```
@@ -561,8 +546,8 @@ graph TD
 ```
 SaldoSimpanan(Anggota) = SUM(Pokok) + SUM(Wajib) + SUM(Sukarela) + SUM(Deposito)
 
-Saldo di mobile: saldo real-time dari server (via API)
-Cache offline: saldo terakhir saat online (di IndexedDB)
+Saldo di dashboard: real-time dari server (via API)
+Cache: data terakhir saat online (di browser memory/React Query)
 ```
 
 ### 8.2 Sisa Pinjaman
@@ -658,15 +643,15 @@ VOTING ── tidak quorum ──▶ DIPERPANJANG
 
 ```mermaid
 graph TD
-    subgraph "📱 Mobile (Anggota)"
-        A1[Daftar/Login]
-        A2[Lihat Saldo]
-        A3[Ajukan Pinjaman]
-        A4[Bayar Angsuran]
-        A5[Lihat SHU]
-        A6[e-RAT Voting]
+    subgraph "💻 Admin (Desktop)"
+        A1[Kelola Anggota]
+        A2[Input Transaksi]
+        A3[Proses Pinjaman]
+        A4[Catat Angsuran]
+        A5[Hitung SHU]
+        A6[Lihat Laporan]
     end
-    
+
     subgraph "💻 Admin (Desktop)"
         B1[Kelola Anggota]
         B2[Verifikasi Pendaftaran]
@@ -698,13 +683,13 @@ graph TD
         E1[(SQLite)]
     end
     
-    A1 --> C1
+    A1 --> C2
     A2 --> C3
     A3 --> C4
     A4 --> C4
     A5 --> C5
     A6 --> C6
-    
+
     B1 --> C2
     B2 --> C2
     B3 --> C4
@@ -729,33 +714,33 @@ graph TD
 
 ### Flow Request End-to-End
 
-**Contoh: Anggota ngajuin pinjaman**
+**Contoh: Admin mencatat pengajuan pinjaman**
 
 ```
-[Mobile] POST /api/pinjaman { anggota_id, jumlah, tenor, ... }
-    → [API] Auth middleware: verify JWT
+[Admin] POST /api/pinjaman { anggota_id, jumlah, tenor, ... }
+    → [API] Auth middleware: verify JWT + role check
     → [API] Validate middleware: Zod schema
     → [API] PinjamanController.create()
     → [Service] PinjamanService.ajukan()
-         → Validasi: anggota aktif? saldo cukup?
+         → Validasi: anggota aktif? limit pinjaman?
          → Insert pinjaman (status: DIAJUKAN)
          → Insert jurnal (Piutang)
-         → Notif admin: "Ada pengajuan baru"
+         → Notif pengurus: "Ada pengajuan baru perlu approval"
     → [SQLite] INSERT pinjaman + jurnal
     → [Response] { status: "ok", pinjaman_id: "..." }
 
-[Admin] GET /api/pinjaman?status=diajukan
+[Admin/Pengurus] GET /api/pinjaman?status=diajukan
     → Melihat daftar pengajuan
 
-[Admin] PATCH /api/pinjaman/:id/approve
+[Admin/Pengurus] PATCH /api/pinjaman/:id/approve
     → [Service] update status: DISETUJUI
-    → Notif anggota: "Pinjaman disetujui"
+    → Notif bendahara: "Pinjaman disetujui, siap dicairkan"
 
-[Admin] PATCH /api/pinjaman/:id/cair
+[Bendahara] PATCH /api/pinjaman/:id/cair
     → [Service] update status: AKTIF
     → [Service] generate jadwal angsuran 12 bulan
     → [Service] insert jurnal (Kas - Piutang)
-    → Notif anggota: "Pinjaman sudah cair"
+    → Print bukti pencairan
 ```
 
 ---

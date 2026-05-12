@@ -5,12 +5,12 @@ import {
   Users,
   Wallet,
   HandCoins,
+  BookOpen,
   LogOut,
   Menu,
   Bell,
   ChevronDown,
   Building2,
-  Command,
   Settings,
   Moon,
   Sun,
@@ -25,6 +25,7 @@ const navItems = [
   { label: "Anggota", icon: Users, path: "/anggota" },
   { label: "Simpanan", icon: Wallet, path: "/simpanan" },
   { label: "Pinjaman", icon: HandCoins, path: "/pinjaman" },
+  { label: "Buku Kas", icon: BookOpen, path: "/buku-kas" },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -158,18 +159,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             })}
           </div>
 
-          {/* Promo / Info Card */}
-          <div className="absolute bottom-4 left-3 right-3">
-            <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4 text-white">
-              <div className="flex items-center gap-2 mb-2">
-                <Command className="w-4 h-4" />
-                <span className="text-xs font-semibold">Pro Tip</span>
-              </div>
-              <p className="text-xs text-emerald-50 leading-relaxed">
-                Tekan <kbd className="font-mono bg-white/20 px-1 rounded text-[10px]">⌘K</kbd> untuk pencarian cepat
-              </p>
-            </div>
-          </div>
+
         </aside>
 
         {/* Mobile overlay */}

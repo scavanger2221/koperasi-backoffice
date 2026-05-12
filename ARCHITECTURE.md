@@ -7,8 +7,7 @@
 | Layer | Teknologi | Alasan |
 |-------|-----------|--------|
 | **Monorepo** | Turborepo | 1 cmd jalanin semua app, cache otomatis |
-| **Frontend Mobile (Anggota)** | React + Vite + PWA | VitePWA plugin, SPA, installable |
-| **Frontend Admin (Desktop)** | React + Vite | Satu stack, beda app |
+| **Frontend Admin** | React + Vite + PWA (optional) | Installable, responsive, dark mode |
 | **Styling** | Tailwind CSS v4 + shadcn/ui | Design system reusable |
 | **Backend API** | Hono (Node.js) | TypeScript, battle-tested, middleware-native |
 | **Database** | SQLite (better-sqlite3) | Simple total, zero setup |
@@ -23,71 +22,28 @@
 
 ```
 koperasi-backoffice/
-├── apps/
-│   ├── mobile/                 # Mobile PWA (anggota) — React + Vite
-│   │   ├── src/
-│   │   │   ├── pages/          # React Router pages
-│   │   │   ├── components/     # UI components
-│   │   │   ├── hooks/          # Custom hooks
-│   │   │   ├── lib/            # Utilities, API client
-│   │   │   └── store/          # Zustand / state
-│   │   ├── public/             # Assets + PWA manifest
-│   │   ├── index.html
-│   │   ├── vite.config.ts
-│   │   └── package.json
-│   │
-│   ├── admin/                  # Desktop dashboard (pengurus) — React + Vite
-│   │   ├── src/
-│   │   │   ├── pages/
-│   │   │   ├── components/
-│   │   │   ├── hooks/
-│   │   │   └── lib/
-│   │   ├── index.html
-│   │   ├── vite.config.ts
-│   │   └── package.json
-│   │
-│   └── api/                    # Backend — Hono (Node.js)
-│       ├── src/
-│       │   ├── routes/         # API routes
-│       │   ├── controllers/    # Request handlers
-│       │   ├── services/       # Business logic
-│       │   ├── middleware/     # Auth, validation, error
-│       │   └── lib/            # Config, db, logger
-│       ├── database/
-│       │   ├── migrations/     # Drizzle migrations
-│       │   └── schema/         # Drizzle schema definitions
-│       ├── drizzle.config.ts
-│       └── package.json
+├── api/                 # Backend Hono
+│   ├── src/
+│   │   ├── routes/      # Route definitions (thin!)
+│   │   ├── controllers/ # Request handling
+│   │   ├── services/    # Business logic
+│   │   ├── middleware/  # Auth, validate, error
+│   │   └── lib/         # Config, db, logger
+│   ├── database/
+│   │   └── schema/      # Drizzle schema definitions
+│   └── package.json
 │
-├── packages/
-│   ├── ui/                     # Shared UI (shadcn/ui components)
-│   │   ├── src/
-│   │   │   ├── ui/            # Button, Input, Card, Modal, dll
-│   │   │   └── forms/         # FormField, Select, DatePicker
-│   │   └── package.json
-│   │
-│   ├── shared/                 # Shared types, schemas, utils
-│   │   ├── src/
-│   │   │   ├── types/         # TypeScript interfaces
-│   │   │   ├── schemas/       # Zod validation schemas
-│   │   │   └── constants/     # Enums, configs
-│   │   └── package.json
-│   │
-│   ├── database/               # Drizzle schema + migrations
-│   │   ├── src/
-│   │   │   ├── schema/        # Drizzle schema definitions
-│   │   │   └── seed/          # Seed data
-│   │   ├── drizzle.config.ts
-│   │   └── package.json
-│   │
-│   └── config/                 # Shared configs
-│       ├── eslint/
-│       ├── typescript/
-│       └── tailwind/
+├── admin/               # Admin Dashboard
+│   └── src/
+│       ├── pages/       # React Router pages
+│       ├── components/  # UI components
+│       ├── hooks/       # Custom hooks
+│       └── lib/         # API client, utils
 │
-├── turbo.json                  # Turborepo pipeline
-├── package.json                # Root workspace
-└── .env.example
+└── shared/              # Shared types & schemas
+    └── src/
+        ├── types/       # TypeScript interfaces
+        └── schemas/     # Zod validation schemas
 ```
 
 ---
@@ -356,21 +312,18 @@ GET    /api/anggota/:id/shu       → Riwayat SHU
 ```
 GET    /api/simpanan              → List simpanan
 GET    /api/simpanan/:id          → Detail
-POST   /api/simpanan              → Catat setoran (admin)
-GET    /api/simpanan/saya         → Simpanan anggota login
-POST   /api/simpanan/setor        → Setor via mobile
+POST   /api/simpanan              → Catat setoran
 GET    /api/simpanan/mutasi       → Mutasi simpanan
 ```
 
 ### Pinjaman
 ```
-GET    /api/pinjaman              → List pinjaman (admin)
+GET    /api/pinjaman              → List pinjaman
 GET    /api/pinjaman/:id          → Detail + angsuran
 POST   /api/pinjaman              → Ajukan pinjaman
 PATCH  /api/pinjaman/:id/approve  → Approve (pengurus)
-PATCH  /api/pinjaman/:id/cair    → Cairkan (bendahara)
-GET    /api/pinjaman/saya         → Pinjaman anggota login
-POST   /api/pinjaman/:id/bayar   → Bayar angsuran
+PATCH  /api/pinjaman/:id/cair     → Cairkan (bendahara)
+POST   /api/pinjaman/:id/bayar    → Bayar angsuran
 ```
 
 ### SHU
@@ -380,7 +333,6 @@ POST   /api/shu/hitung            → Hitung SHU otomatis
 GET    /api/shu/:id               → Detail SHU
 GET    /api/shu/:id/anggota       → Rincian per anggota
 PATCH  /api/shu/:id/konfirmasi    → Konfirmasi SHU
-GET    /api/shu/saya              → SHU anggota login
 ```
 
 ### Laporan & RAT
@@ -392,7 +344,6 @@ GET    /api/laporan/buku-besar    → Buku besar
 GET    /api/rat                   → List RAT
 POST   /api/rat                   → Buat RAT
 GET    /api/rat/:id               → Detail RAT
-POST   /api/rat/:id/vote          → Voting
 GET    /api/rat/:id/export        → Export PDF
 ```
 
@@ -427,29 +378,7 @@ GET    /api/dashboard/aktivitas   → Aktivitas terkini
 
 ## 5. Frontend Routes
 
-### 📱 Mobile (Anggota) — `apps/mobile/src/pages`
-
-```tsx
-/                           → Landing / Login
-/auth/login                 → Login
-/auth/register              → Registrasi anggota
-
-/beranda                    → Dashboard anggota (saldo, SHU, notifikasi)
-/simpanan                   → Saldo & mutasi simpanan
-/simpanan/setor             → Setor simpanan
-/pinjaman                   → Daftar pinjaman
-/pinjaman/ajukan            → Ajukan pinjaman
-/pinjaman/:id               → Detail pinjaman + angsuran
-/pinjaman/:id/bayar         → Bayar angsuran
-/shu                        → SHU diterima
-/profil                     → Profil & kartu anggota QR
-/profil/edit                → Edit profil
-/rat                        → Daftar RAT
-/rat/:id                    → Detail RAT + voting
-/deposito                   → Deposito
-```
-
-### 💻 Desktop (Admin) — `apps/admin/src/pages`
+### Admin Dashboard — `admin/src/pages`
 
 ```
 /admin/login                → Login admin
@@ -504,33 +433,19 @@ GET    /api/dashboard/aktivitas   → Aktivitas terkini
 
 ---
 
-## 6. PWA Strategy
+## 6. PWA (Optional)
 
-### Service Worker
-- **Offline-first** untuk data anggota simpanan & pinjaman (cache di IndexedDB)
-- **Network-first** untuk data real-time (saldo, status pinjaman)
-- **Background sync** untuk pengajuan pinjaman offline → submit pas online
-- **Push notifications** untuk:
-  - Jatuh tempo angsuran
-  - Tagihan simpanan wajib
-  - Status pengajuan pinjaman
-  - Undangan RAT
-  - SHU dibagikan
+> Admin dashboard bisa di-install sebagai PWA. Tidak ada app terpisah untuk anggota.
+
+### Service Worker (Production)
+- Cache static assets (app shell, css, js)
+- Network-first untuk semua API requests
+- IndexedDB untuk cache data read-only
 
 ### Manifest
-- `display: standalone` — kaya native app
-- `orientation: portrait` untuk mobile
+- `display: standalone`
 - `theme_color: #16a34a` (green — koperasi)
 - Icon sizes: 192x192, 512x512
-
-### Arsitektur Offline
-```
-Service Worker
-├── Cache static assets (app shell)
-├── Cache API responses (simpanan, pinjaman)
-├── IndexedDB untuk data offline
-└── Background Sync untuk queue operasi offline
-```
 
 ---
 
@@ -542,10 +457,10 @@ Service Worker
 - Node.js LTS — **bukan library experiment**, udah production proven 10+ tahun.
 - Ringan tetap — startup <100ms, routing pake trie tree, zero deps berat.
 
-### 2. React + Vite for Both Frontends
-- `apps/mobile` (PWA) dan `apps/admin` (desktop) pake React + Vite.
-- Mobile: PWA-enabled, VitePWA plugin, mobile-first layout.
-- Desktop: Full dashboard, complex tables, multi-panel.
+### 2. React + Vite for Admin Dashboard
+- Single frontend app: `admin/` — React + Vite.
+- Responsive: desktop-first tapi works on tablet/mobile.
+- PWA-enabled via VitePWA plugin (optional, production only).
 - React Router untuk routing, TanStack Query untuk server state.
 
 ### 3. Multi-Tenant by Koperasi
@@ -571,22 +486,21 @@ Service Worker
 
 | Modul | Estimasi | Dependensi |
 |-------|----------|------------|
-| Setup boilerplate (api + mobile + admin + shared) | 1 hari | — |
+| Setup boilerplate (api + admin + shared) | 1 hari | — |
 | Auth login + RBAC | 3 hari | — |
 | Manajemen anggota CRUD | 3 hari | Auth |
 | Simpanan (pokok, wajib, sukarela) | 4 hari | Anggota |
 | Pinjaman + angsuran | 5 hari | Anggota |
 | Pembukuan dasar (jurnal, buku besar) | 3 hari | Transaksi |
-| PWA setup + offline | 2 hari | — |
 | Dashboard ringkasan | 2 hari | Semua modul |
-| **Total MVP** | **~24 hari** | |
+| **Total MVP** | **~21 hari** | |
 
 ---
 
 ## 9. Struktur File Penting (Boilerplate)
 
 ```bash
-apps/api/src/
+api/src/
 ├── index.ts                    # Entry point Hono
 ├── routes/
 │   ├── auth.ts

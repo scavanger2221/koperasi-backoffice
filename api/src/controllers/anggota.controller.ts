@@ -13,7 +13,7 @@ export const anggotaController = {
   },
 
   async getById(c: Context) {
-    const id = c.req.param("id");
+    const id = c.req.param("id")!;
     const result = await anggotaService.getById(id);
     return c.json({ success: true, data: result });
   },
@@ -25,15 +25,21 @@ export const anggotaController = {
   },
 
   async update(c: Context) {
-    const id = c.req.param("id");
+    const id = c.req.param("id")!;
     const body = await c.req.json();
     const result = await anggotaService.update(id, body);
     return c.json({ success: true, data: result });
   },
 
   async deactivate(c: Context) {
-    const id = c.req.param("id");
+    const id = c.req.param("id")!;
     const result = await anggotaService.deactivate(id);
+    return c.json({ success: true, data: result });
+  },
+
+  async activate(c: Context) {
+    const id = c.req.param("id")!;
+    const result = await anggotaService.activate(id);
     return c.json({ success: true, data: result });
   },
 };

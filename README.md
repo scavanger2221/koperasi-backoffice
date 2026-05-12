@@ -8,7 +8,6 @@ Aplikasi backoffice koperasi modern dengan stack Hono + React + SQLite.
 |-------|-----------|
 | API Backend | Hono + Node.js + Drizzle ORM + SQLite |
 | Admin Dashboard | React + Vite + Tailwind CSS v4 + shadcn/ui |
-| Mobile PWA | React + Vite + Tailwind CSS v4 + PWA |
 | Shared | Zod schemas + TypeScript types |
 | Monorepo | npm workspaces |
 
@@ -35,7 +34,6 @@ npm run dev
 |-----|-----|-------------|
 | API | http://localhost:3001 | REST API backend |
 | Admin | http://localhost:3002 | Dashboard admin/pengurus |
-| Mobile | http://localhost:3003 | PWA untuk anggota |
 
 ## 🔑 Default Login
 
@@ -57,9 +55,4 @@ npm run dev
 - [x] Simpanan records
 - [x] Pinjaman approval workflow
 
-### Mobile PWA
-- [x] Login
-- [x] Beranda (saldo summary)
-- [x] Simpanan & mutasi
-- [x] Pinjaman (ajukan & lihat status)
-- [x] Profil
+

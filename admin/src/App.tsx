@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
 import Login from "@/pages/Login";
@@ -6,10 +7,21 @@ import Dashboard from "@/pages/Dashboard";
 import Anggota from "@/pages/Anggota";
 import SimpananPage from "@/pages/Simpanan";
 import PinjamanPage from "@/pages/Pinjaman";
+import BukuKasPage from "@/pages/BukuKas";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { token } = useAuth();
-  return token ? <Layout>{children}</Layout> : <Navigate to="/login" replace />;
+  const { token, ready } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (ready && !token) {
+      navigate("/login", { replace: true });
+    }
+  }, [ready, token, navigate]);
+
+  if (!ready || !token) return null;
+
+  return <Layout>{children}</Layout>;
 }
 
 function AppRoutes() {
@@ -45,6 +57,14 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <PinjamanPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/buku-kas"
+        element={
+          <PrivateRoute>
+            <BukuKasPage />
           </PrivateRoute>
         }
       />

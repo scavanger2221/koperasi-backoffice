@@ -3,6 +3,7 @@ import { HTTPException } from "hono/http-exception";
 import crypto from "crypto";
 import { db } from "../lib/db.js";
 import { simpanan, anggota } from "../../database/schema/index.js";
+import { jurnalSimpanan } from "./jurnal.service.js";
 import type { SimpananInput } from "@koperasi/shared/schemas";
 
 export class SimpananService {
@@ -50,6 +51,16 @@ export class SimpananService {
       tanggal: data.tanggal,
       metodeBayar: data.metodeBayar,
       keterangan: data.keterangan,
+    });
+
+    // Auto-create jurnal
+    await jurnalSimpanan({
+      simpananId: id,
+      anggotaNama: member.nama,
+      jenis: data.jenis,
+      jumlah: Number(data.jumlah),
+      tanggal: data.tanggal,
+      metodeBayar: data.metodeBayar,
     });
 
     return { id };

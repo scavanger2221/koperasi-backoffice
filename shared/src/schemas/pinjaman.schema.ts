@@ -11,7 +11,7 @@ export const pinjamanSchema = z.object({
 
 export const angsuranSchema = z.object({
   pinjamanId: z.string().uuid("ID pinjaman tidak valid"),
-  jumlahBayar: z.string().regex(/^\d+(\.\d{1,2})?$/, "Jumlah tidak valid"),
+  jumlahBayar: z.string().regex(/^\d+(\.\d{1,2})?$/, "Jumlah tidak valid").optional(),
   tanggalBayar: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal: YYYY-MM-DD"),
   metodeBayar: z.enum(["tunai", "transfer", "qris"]).default("tunai"),
 });

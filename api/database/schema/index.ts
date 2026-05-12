@@ -76,3 +76,32 @@ export const angsuran = sqliteTable("angsuran", {
   metodeBayar: text("metode_bayar", { enum: ["tunai", "transfer", "qris", "auto_debet"] }),
   createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
 });
+
+export const akun = sqliteTable("akun", {
+  id: text("id").primaryKey(),
+  kode: text("kode").notNull().unique(),
+  nama: text("nama").notNull(),
+  tipe: text("tipe", { enum: ["aset", "kewajiban", "ekuitas", "pendapatan", "biaya"] }).notNull(),
+  saldoNormal: text("saldo_normal", { enum: ["debit", "kredit"] }).notNull(),
+  aktif: integer("aktif", { mode: "boolean" }).notNull().default(true),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+});
+
+export const jurnal = sqliteTable("jurnal", {
+  id: text("id").primaryKey(),
+  tanggal: text("tanggal").notNull(),
+  noJurnal: text("no_jurnal").notNull(),
+  keterangan: text("keterangan").notNull(),
+  refTipe: text("ref_tipe", { enum: ["simpanan", "pinjaman", "angsuran", "penjualan", "pembelian", "biaya", "jurnal_umum"] }).notNull(),
+  refId: text("ref_id"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+});
+
+export const jurnalDetail = sqliteTable("jurnal_detail", {
+  id: text("id").primaryKey(),
+  jurnalId: text("jurnal_id").notNull().references(() => jurnal.id),
+  akunId: text("akun_id").notNull().references(() => akun.id),
+  debit: text("debit").notNull().default("0"),
+  kredit: text("kredit").notNull().default("0"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+});
