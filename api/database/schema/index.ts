@@ -129,3 +129,42 @@ export const jurnalDetail = sqliteTable("jurnal_detail", {
   kredit: text("kredit").notNull().default("0"),
   createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
 });
+
+export const shu = sqliteTable("shu", {
+  id: text("id").primaryKey(),
+  periode: text("periode").notNull(), // YYYY
+  totalShu: text("total_shu").notNull().default("0"),
+  totalPendapatan: text("total_pendapatan").notNull().default("0"),
+  totalBiaya: text("total_biaya").notNull().default("0"),
+  alokasiAnggota: text("alokasi_anggota").notNull().default("40"),
+  alokasiCadangan: text("alokasi_cadangan").notNull().default("20"),
+  alokasiPengurus: text("alokasi_pengurus").notNull().default("10"),
+  alokasiPendidikan: text("alokasi_pendidikan").notNull().default("5"),
+  alokasiSosial: text("alokasi_sosial").notNull().default("5"),
+  alokasiLain: text("alokasi_lain").notNull().default("20"),
+  danaAnggota: text("dana_anggota").notNull().default("0"),
+  danaCadangan: text("dana_cadangan").notNull().default("0"),
+  danaPengurus: text("dana_pengurus").notNull().default("0"),
+  danaPendidikan: text("dana_pendidikan").notNull().default("0"),
+  danaSosial: text("dana_sosial").notNull().default("0"),
+  danaLain: text("dana_lain").notNull().default("0"),
+  totalSimpanan: text("total_simpanan").notNull().default("0"),
+  totalTransaksi: text("total_transaksi").notNull().default("0"),
+  status: text("status", { enum: ["draft", "dikonfirmasi", "disahkan", "dibagikan"] }).notNull().default("draft"),
+  keterangan: text("keterangan"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`).$onUpdate(() => sql`(datetime('now'))`).notNull(),
+});
+
+export const shuAnggota = sqliteTable("shu_anggota", {
+  id: text("id").primaryKey(),
+  shuId: text("shu_id").notNull().references(() => shu.id),
+  anggotaId: text("anggota_id").notNull().references(() => anggota.id),
+  jma: text("jma").notNull().default("0"),
+  jua: text("jua").notNull().default("0"),
+  total: text("total").notNull().default("0"),
+  simpananAnggota: text("simpanan_anggota").notNull().default("0"),
+  transaksiAnggota: text("transaksi_anggota").notNull().default("0"),
+  status: text("status", { enum: ["belum_dibagikan", "dibagikan"] }).notNull().default("belum_dibagikan"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+});

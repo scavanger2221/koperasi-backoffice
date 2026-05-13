@@ -445,3 +445,146 @@ export async function getBukuKas({
 
   return { data, meta: { page, limit, total } };
 }
+
+interface KasRow {
+  jurnalId: string;
+  tanggal: string;
+  keterangan: string;
+  kasMasuk: number;
+  kasKeluar: number;
+  tipe: string;
+  akunKode: string;
+  akunNama: string;
+}
+
+export async function getArusKas({
+  tanggalMulai,
+  tanggalSelesai,
+}: {
+  tanggalMulai?: string;
+  tanggalSelesai?: string;
+}) {
+  // Get kas account IDs via Drizzle
+  const kasAkun = await db
+    .select({ id: akun.id })
+    .from(akun)
+    .where(and(sql`${akun.kode} LIKE '1-1%'`, eq(akun.aktif, true)));
+
+  if (kasAkun.length === 0) return emptyArusKas();
+
+  const kasIdList = kasAkun.map((a) => a.id);
+
+  // Build date filter
+  const dateParts: string[] = [];
+  if (tanggalMulai) dateParts.push(`j.tanggal >= '${tanggalMulai}'`);
+  if (tanggalSelesai) dateParts.push(`j.tanggal <= '${tanggalSelesai}'`);
+  const dateFilter = dateParts.length > 0 ? `AND ${dateParts.join(" AND ")}` : "";
+
+  // Get all jurnal where a kas account is involved, paired with counterpart
+  // Using sql tagged template with sql.raw for dynamic IN clauses
+  const kasInRaw = `'${kasIdList.join("','")}'`;
+  const rows = db.all<KasRow>(sql`
+    SELECT
+      j.id as jurnalId, j.tanggal, j.keterangan,
+      CAST(jd_kas.debit AS INTEGER) as kasMasuk,
+      CAST(jd_kas.kredit AS INTEGER) as kasKeluar,
+      a_counter.tipe, a_counter.kode as akunKode, a_counter.nama as akunNama
+    FROM jurnal j
+    INNER JOIN jurnal_detail jd_kas ON jd_kas.jurnal_id = j.id
+      AND jd_kas.akun_id IN (${sql.raw(kasInRaw)})
+    INNER JOIN jurnal_detail jd_counter ON jd_counter.jurnal_id = j.id
+      AND jd_counter.akun_id NOT IN (${sql.raw(kasInRaw)})
+    INNER JOIN akun a_counter ON jd_counter.akun_id = a_counter.id
+    WHERE 1=1 ${sql.raw(dateFilter)}
+    ORDER BY j.tanggal ASC, j.created_at ASC
+  `);
+
+  // Opening balance: kas transactions BEFORE the period
+  const getSaldoKasSebelum = () => {
+    if (!tanggalMulai) return 0;
+    const r = db.get<{ debit: string; kredit: string }>(sql`
+      SELECT SUM(CAST(jd.debit AS INTEGER)) as debit, SUM(CAST(jd.kredit AS INTEGER)) as kredit
+      FROM jurnal_detail jd
+      INNER JOIN jurnal j ON jd.jurnal_id = j.id
+      WHERE jd.akun_id IN (${sql.raw(kasInRaw)}) AND j.tanggal < ${tanggalMulai}
+    `);
+    return (Number(r?.debit ?? 0)) - (Number(r?.kredit ?? 0));
+  };
+
+  // Closing balance: all kas transactions up to period end
+  const getSaldoKasAkhir = () => {
+    const toDate = tanggalSelesai || new Date().toISOString().split("T")[0];
+    const r = db.get<{ debit: string; kredit: string }>(sql`
+      SELECT SUM(CAST(jd.debit AS INTEGER)) as debit, SUM(CAST(jd.kredit AS INTEGER)) as kredit
+      FROM jurnal_detail jd
+      INNER JOIN jurnal j ON jd.jurnal_id = j.id
+      WHERE jd.akun_id IN (${sql.raw(kasInRaw)}) AND j.tanggal <= ${toDate}
+    `);
+    return (Number(r?.debit ?? 0)) - (Number(r?.kredit ?? 0));
+  };
+
+  // Categorize — deduplicate by jurnalId (use first counterpart's type)
+  const seen = new Set<string>();
+  const operasi: KasRow[] = [];
+  const investasi: KasRow[] = [];
+  const pendanaan: KasRow[] = [];
+
+  for (const r of rows) {
+    if (seen.has(r.jurnalId)) continue;
+    seen.add(r.jurnalId);
+
+    if (r.tipe === "pendapatan" || r.tipe === "biaya") {
+      operasi.push(r);
+    } else if (r.tipe === "aset") {
+      investasi.push(r);
+    } else {
+      pendanaan.push(r);
+    }
+  }
+
+  const sumRow = (items: KasRow[]) => ({
+    masuk: items.reduce((s, r) => s + (r.kasMasuk || 0), 0),
+    keluar: items.reduce((s, r) => s + (r.kasKeluar || 0), 0),
+    total: 0,
+  });
+
+  const totalOperasi = sumRow(operasi);
+  const totalInvestasi = sumRow(investasi);
+  const totalPendanaan = sumRow(pendanaan);
+  totalOperasi.total = totalOperasi.masuk - totalOperasi.keluar;
+  totalInvestasi.total = totalInvestasi.masuk - totalInvestasi.keluar;
+  totalPendanaan.total = totalPendanaan.masuk - totalPendanaan.keluar;
+
+  const saldoAwal = getSaldoKasSebelum();
+  const saldoAkhir = getSaldoKasAkhir();
+
+  const mapRow = (r: KasRow) => ({
+    tanggal: r.tanggal,
+    keterangan: r.keterangan,
+    masuk: r.kasMasuk,
+    keluar: r.kasKeluar,
+    akun: r.akunNama,
+  });
+
+  return {
+    saldoAwal,
+    saldoAkhir,
+    netCashFlow: totalOperasi.total + totalInvestasi.total + totalPendanaan.total,
+    operasi: operasi.map(mapRow),
+    investasi: investasi.map(mapRow),
+    pendanaan: pendanaan.map(mapRow),
+    totalOperasi,
+    totalInvestasi,
+    totalPendanaan,
+  };
+}
+
+function emptyArusKas() {
+  return {
+    saldoAwal: 0, saldoAkhir: 0, netCashFlow: 0,
+    operasi: [], investasi: [], pendanaan: [],
+    totalOperasi: { masuk: 0, keluar: 0, total: 0 },
+    totalInvestasi: { masuk: 0, keluar: 0, total: 0 },
+    totalPendanaan: { masuk: 0, keluar: 0, total: 0 },
+  };
+}

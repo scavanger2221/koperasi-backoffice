@@ -67,6 +67,45 @@ export interface Angsuran {
   createdAt: string;
 }
 
+export interface Shu {
+  id: string;
+  periode: string;
+  totalShu: string;
+  totalPendapatan: string;
+  totalBiaya: string;
+  alokasiAnggota: string;
+  alokasiCadangan: string;
+  alokasiPengurus: string;
+  alokasiPendidikan: string;
+  alokasiSosial: string;
+  alokasiLain: string;
+  danaAnggota: string;
+  danaCadangan: string;
+  danaPengurus: string;
+  danaPendidikan: string;
+  danaSosial: string;
+  danaLain: string;
+  totalSimpanan: string;
+  totalTransaksi: string;
+  status: "draft" | "dikonfirmasi" | "disahkan" | "dibagikan";
+  keterangan?: string;
+  createdAt: string;
+}
+
+export interface ShuAnggota {
+  id: string;
+  shuId: string;
+  anggotaId: string;
+  jma: string;
+  jua: string;
+  total: string;
+  simpananAnggota: string;
+  transaksiAnggota: string;
+  status: "belum_dibagikan" | "dibagikan";
+}
+
+export type ShuStatus = "draft" | "dikonfirmasi" | "disahkan" | "dibagikan";
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;

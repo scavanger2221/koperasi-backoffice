@@ -17,6 +17,7 @@ import {
   Receipt,
   ClipboardList,
   BarChart3,
+  PiggyBank,
 } from "lucide-react";
 import { CommandPalette } from "./CommandPalette";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +33,7 @@ const navItems = [
   { label: "Tagihan", icon: Receipt, path: "/tagihan" },
   { label: "Laporan", icon: BarChart3, path: "/laporan" },
   { label: "Audit Log", icon: ClipboardList, path: "/audit" },
+  { label: "SHU", icon: PiggyBank, path: "/shu" },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {

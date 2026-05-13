@@ -38,7 +38,7 @@
 - [x] Neraca saldo
 - [x] Laba rugi / SHU
 - [x] Neraca
-- [ ] Arus kas
+- [x] Arus kas
 
 > Pembukuan **hanya di backoffice** — ini adalah aplikasi internal koperasi.
 
@@ -53,11 +53,11 @@
 ## 🟡 FASE 2: Standard
 
 ### 6. SHU (Sisa Hasil Usaha)
-- [ ] Hitung SHU otomatis dari data tahun buku
-- [ ] Atur alokasi proporsi (anggota, cadangan, pengurus, dll)
-- [ ] JMA + JUA (detail per anggota)
-- [ ] Buku SHU per anggota
-- [ ] Preview & approval SHU
+- [x] Hitung SHU otomatis dari data tahun buku (laba rugi)
+- [x] Atur alokasi proporsi (anggota, cadangan, pengurus, dll)
+- [x] JMA + JUA (detail per anggota)
+- [x] Buku SHU per anggota
+- [x] Preview & approval SHU (Draft → Dikonfirmasi → Disahkan → Dibagikan)
 - [ ] Export daftar SHU (PDF/XLSX)
 
 ### 7. RAT (Rapat Anggota Tahunan)
@@ -142,4 +142,4 @@
 
 ---
 
-*Dokumen ini diupdate 12 Mei 2026 — Phase 1 MVP selesai, siap masuk Phase 2.*
+*Dokumen ini diupdate 13 Mei 2026 — Phase 1 MVP + SHU selesai, siap masuk Phase 2 (RAT, Unit Usaha).*

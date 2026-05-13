@@ -15,7 +15,7 @@
 10. [State Machine Semua Entity](#10-state-machine)
 11. [Data Flow Diagram](#11-data-flow-diagram)
 
-> **Status Implementasi:** Phase 1 MVP ✅ — Semua flow sampai Pembukuan sudah diimplementasi. SHU, RAT, dan Unit Usaha masih Phase 2.
+> **Status Implementasi:** Phase 1 MVP ✅ — Semua flow sampai Pembukuan sudah diimplementasi. SHU ✅ selesai. RAT dan Unit Usaha masih Phase 2.
 
 ---
 
@@ -793,4 +793,4 @@ graph TD
 
 ---
 
-*Dokumen ini diupdate 12 Mei 2026 — Phase 1 MVP complete (Anggota, Simpanan, Pinjaman, Pembukuan, Tagihan, Audit Log). Phase 2: SHU, RAT, Unit Usaha.*
+*Dokumen ini diupdate 13 Mei 2026 — Phase 1 MVP complete. SHU ✅ selesai. Phase 2: RAT, Unit Usaha.*

@@ -9,4 +9,5 @@ export const jurnalRoute = new Hono()
   .get("/buku-besar/:akunId", jurnalController.bukuBesar)
   .get("/neraca-saldo", jurnalController.neracaSaldo)
   .get("/laba-rugi", jurnalController.labaRugi)
-  .get("/neraca", jurnalController.neraca);
+  .get("/neraca", jurnalController.neraca)
+  .get("/arus-kas", jurnalController.arusKas);

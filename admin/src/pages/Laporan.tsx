@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Scale, TrendingUp, FileBarChart, Loader2 } from "lucide-react";
+import { BookOpen, Scale, TrendingUp, FileBarChart, Wallet, Loader2 } from "lucide-react";
 
 interface Akun {
   id: string;
@@ -52,6 +52,26 @@ interface NeracaData {
   balanced: boolean;
 }
 
+interface ArusKasItem {
+  tanggal: string;
+  keterangan: string;
+  masuk: number;
+  keluar: number;
+  akun: string;
+}
+
+interface ArusKasData {
+  saldoAwal: number;
+  saldoAkhir: number;
+  netCashFlow: number;
+  operasi: ArusKasItem[];
+  investasi: ArusKasItem[];
+  pendanaan: ArusKasItem[];
+  totalOperasi: { masuk: number; keluar: number; total: number };
+  totalInvestasi: { masuk: number; keluar: number; total: number };
+  totalPendanaan: { masuk: number; keluar: number; total: number };
+}
+
 function formatRupiah(n: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 }
@@ -64,6 +84,7 @@ export default function LaporanPage() {
   const [neracaSaldo, setNeracaSaldo] = useState<{ data: NeracaSaldoRow[]; totalDebit: number; totalKredit: number } | null>(null);
   const [labaRugi, setLabaRugi] = useState<LabaRugiData | null>(null);
   const [neraca, setNeraca] = useState<NeracaData | null>(null);
+  const [arusKas, setArusKas] = useState<ArusKasData | null>(null);
   const [loading, setLoading] = useState(false);
   const [periodeMulai, setPeriodeMulai] = useState("");
   const [periodeSelesai, setPeriodeSelesai] = useState("");
@@ -76,6 +97,7 @@ export default function LaporanPage() {
     if (activeTab === "neraca-saldo") fetchNeracaSaldo();
     if (activeTab === "laba-rugi") fetchLabaRugi();
     if (activeTab === "neraca") fetchNeraca();
+    if (activeTab === "arus-kas") fetchArusKas();
   }, [activeTab]);
 
   const fetchAkun = async () => {
@@ -135,6 +157,19 @@ export default function LaporanPage() {
     }
   };
 
+  const fetchArusKas = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (periodeMulai) params.set("tanggalMulai", periodeMulai);
+      if (periodeSelesai) params.set("tanggalSelesai", periodeSelesai);
+      const res = await api<{ success: boolean; data: ArusKasData }>(`/api/jurnal/arus-kas?${params}`);
+      setArusKas(res.data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -145,11 +180,12 @@ export default function LaporanPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="buku-besar"><BookOpen className="w-4 h-4 mr-2" />Buku Besar</TabsTrigger>
           <TabsTrigger value="neraca-saldo"><Scale className="w-4 h-4 mr-2" />Neraca Saldo</TabsTrigger>
           <TabsTrigger value="laba-rugi"><TrendingUp className="w-4 h-4 mr-2" />Laba Rugi</TabsTrigger>
           <TabsTrigger value="neraca"><FileBarChart className="w-4 h-4 mr-2" />Neraca</TabsTrigger>
+          <TabsTrigger value="arus-kas"><Wallet className="w-4 h-4 mr-2" />Arus Kas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="buku-besar" className="space-y-4">
@@ -407,7 +443,137 @@ export default function LaporanPage() {
             </Card>
           )}
         </TabsContent>
+
+        <TabsContent value="arus-kas" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Filter Periode</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-4">
+              <Input type="date" value={periodeMulai} onChange={(e) => setPeriodeMulai(e.target.value)} className="w-[180px]" />
+              <Input type="date" value={periodeSelesai} onChange={(e) => setPeriodeSelesai(e.target.value)} className="w-[180px]" />
+              <Button onClick={fetchArusKas} disabled={loading}>
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Tampilkan
+              </Button>
+            </CardContent>
+          </Card>
+
+          {loading && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {arusKas && !loading && (
+            <>
+              {/* Summary card */}
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
+                <CardContent className="p-5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-xs text-emerald-100 font-medium">Saldo Awal</p>
+                      <p className="text-lg font-bold mt-0.5">{formatRupiah(arusKas.saldoAwal)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-emerald-100 font-medium">Penerimaan</p>
+                      <p className="text-lg font-bold mt-0.5">
+                        {formatRupiah(arusKas.totalOperasi.masuk + arusKas.totalInvestasi.masuk + arusKas.totalPendanaan.masuk)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-emerald-100 font-medium">Pengeluaran</p>
+                      <p className="text-lg font-bold mt-0.5">
+                        {formatRupiah(arusKas.totalOperasi.keluar + arusKas.totalInvestasi.keluar + arusKas.totalPendanaan.keluar)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-emerald-100 font-medium">Saldo Akhir</p>
+                      <p className="text-lg font-bold mt-0.5">{formatRupiah(arusKas.saldoAkhir)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Kas masuk / keluar net */}
+              <Card className="border-0 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Arus Kas Bersih</span>
+                    <span className={`text-lg font-bold ${arusKas.netCashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                      {arusKas.netCashFlow >= 0 ? "+" : ""}{formatRupiah(arusKas.netCashFlow)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Aktivitas Operasi */}
+              {renderArusKasSection("Aktivitas Operasi", "text-blue-600", arusKas.operasi, arusKas.totalOperasi)}
+
+              {/* Aktivitas Investasi */}
+              {renderArusKasSection("Aktivitas Investasi", "text-purple-600", arusKas.investasi, arusKas.totalInvestasi)}
+
+              {/* Aktivitas Pendanaan */}
+              {renderArusKasSection("Aktivitas Pendanaan", "text-orange-600", arusKas.pendanaan, arusKas.totalPendanaan)}
+            </>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function renderArusKasSection(title: string, colorClass: string, items: ArusKasItem[], total: { masuk: number; keluar: number; total: number }) {
+  return (
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className={`text-base ${colorClass}`}>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-2">Tidak ada transaksi</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs uppercase">Tanggal</th>
+                  <th className="text-left py-2 px-2 font-medium text-muted-foreground text-xs uppercase">Keterangan</th>
+                  <th className="text-right py-2 px-2 font-medium text-muted-foreground text-xs uppercase">Masuk</th>
+                  <th className="text-right py-2 px-2 font-medium text-muted-foreground text-xs uppercase">Keluar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, idx) => (
+                  <tr key={idx} className="border-b border-border/50 hover:bg-muted/60">
+                    <td className="py-2 px-2 text-muted-foreground">{item.tanggal}</td>
+                    <td className="py-2 px-2">
+                      <p className="font-medium text-foreground">{item.keterangan}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.akun}</p>
+                    </td>
+                    <td className="py-2 px-2 text-right text-emerald-600 font-medium">
+                      {item.masuk > 0 ? formatRupiah(item.masuk) : "-"}
+                    </td>
+                    <td className="py-2 px-2 text-right text-red-600 font-medium">
+                      {item.keluar > 0 ? formatRupiah(item.keluar) : "-"}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-foreground/20 font-semibold">
+                  <td colSpan={2} className="py-2.5 px-2 text-foreground">Subtotal {title}</td>
+                  <td className="py-2.5 px-2 text-right text-emerald-600">{formatRupiah(total.masuk)}</td>
+                  <td className="py-2.5 px-2 text-right text-red-600">{formatRupiah(total.keluar)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="flex justify-end pt-2 border-t border-border/50 mt-1">
+          <span className={`text-sm font-bold ${total.total >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            {total.total >= 0 ? "+" : ""}{formatRupiah(total.total)}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

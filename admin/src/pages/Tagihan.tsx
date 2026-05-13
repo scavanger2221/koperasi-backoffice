@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Receipt, Plus, AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/useToast";
 
 interface Tagihan {
   id: string;
@@ -43,6 +44,7 @@ export default function TagihanPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
   const [generateLoading, setGenerateLoading] = useState(false);
+  const { toast } = useToast();
   const [periodeFilter, setPeriodeFilter] = useState(new Date().toISOString().slice(0, 7));
   const [generatePeriode, setGeneratePeriode] = useState(new Date().toISOString().slice(0, 7));
   const [generateJumlah, setGenerateJumlah] = useState("50000");
@@ -82,6 +84,9 @@ export default function TagihanPage() {
       setDialogOpen(false);
       fetchTagihan();
       fetchSummary();
+      toast("Tagihan berhasil digenerate", "success");
+    } catch {
+      toast("Gagal generate tagihan", "error");
     } finally {
       setGenerateLoading(false);
     }
@@ -89,18 +94,28 @@ export default function TagihanPage() {
 
   const handleBayar = async (id: string) => {
     const tanggalBayar = new Date().toISOString().split("T")[0];
-    await api("/api/tagihan/bayar", {
-      method: "POST",
-      body: JSON.stringify({ tagihanId: id, tanggalBayar }),
-    });
-    fetchTagihan();
-    fetchSummary();
+    try {
+      await api("/api/tagihan/bayar", {
+        method: "POST",
+        body: JSON.stringify({ tagihanId: id, tanggalBayar }),
+      });
+      fetchTagihan();
+      fetchSummary();
+      toast("Tagihan berhasil dibayar", "success");
+    } catch {
+      toast("Gagal membayar tagihan", "error");
+    }
   };
 
   const handleCekTunggakan = async () => {
-    await api("/api/tagihan/cek-tunggakan", { method: "POST" });
-    fetchTagihan();
-    fetchSummary();
+    try {
+      await api("/api/tagihan/cek-tunggakan", { method: "POST" });
+      fetchTagihan();
+      fetchSummary();
+      toast("Tunggakan berhasil diperbarui", "success");
+    } catch {
+      toast("Gagal cek tunggakan", "error");
+    }
   };
 
   return (

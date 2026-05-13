@@ -354,10 +354,12 @@ POST   /api/pinjaman/bayar             → Bayar angsuran
 ### SHU
 ```
 GET    /api/shu                   → List periode SHU
-POST   /api/shu/hitung            → Hitung SHU otomatis
-GET    /api/shu/:id               → Detail SHU
-GET    /api/shu/:id/anggota       → Rincian per anggota
-PATCH  /api/shu/:id/konfirmasi    → Konfirmasi SHU
+POST   /api/shu/hitung            → Hitung SHU otomatis (dari laba rugi)
+GET    /api/shu/:id               → Detail SHU + rincian per anggota (embedded)
+PATCH  /api/shu/:id/konfirmasi    → Konfirmasi SHU (Draft → Dikonfirmasi)
+PATCH  /api/shu/:id/sahkan        → Sahkan SHU (Dikonfirmasi → Disahkan)
+PATCH  /api/shu/:id/bagikan       → Bagikan SHU ke anggota (Disahkan → Dibagikan)
+DELETE /api/shu/:id               → Hapus SHU draft
 ```
 
 ### Laporan & RAT
@@ -431,8 +433,9 @@ GET    /api/dashboard/aktivitas   → Aktivitas terkini
 /pinjaman                   → Semua pinjaman
 /buku-kas                   → Buku kas
 /tagihan                    → Tagihan simpanan wajib
-/laporan                    → Laporan keuangan (buku besar, neraca saldo, laba rugi, neraca)
+/laporan                    → Laporan keuangan (buku besar, neraca saldo, laba rugi, neraca, arus kas)
 /audit                      → Audit log aktivitas
+/shu                        → SHU (Sisa Hasil Usaha)
 ```
 
 ---
@@ -499,7 +502,8 @@ GET    /api/dashboard/aktivitas   → Aktivitas terkini
 | Auto-tagihan simpanan wajib | ✅ Done | Anggota |
 | Audit log | ✅ Done | Semua modul |
 | Dashboard ringkasan + kesehatan koperasi | ✅ Done | Semua modul |
-| **Total MVP** | **✅ COMPLETE** | |
+| SHU (hitung otomatis + alokasi + JMA/JUA per anggota) | ✅ Done | Jurnal, Anggota, Simpanan |
+| **Total MVP + SHU** | **✅ COMPLETE** | |
 
 ---
 
@@ -516,6 +520,7 @@ api/src/
 │   ├── jurnal.route.ts         # Jurnal, buku kas, buku besar, neraca saldo, laba rugi, neraca
 │   ├── tagihan.route.ts        # Tagihan simpanan wajib
 │   ├── audit.route.ts          # Audit log
+│   ├── shu.route.ts            # SHU calculation & distribution
 │   └── dashboard.route.ts
 ├── controllers/
 │   ├── auth.controller.ts
@@ -525,6 +530,7 @@ api/src/
 │   ├── jurnal.controller.ts
 │   ├── tagihan.controller.ts
 │   ├── audit.controller.ts
+│   ├── shu.controller.ts
 │   └── dashboard.controller.ts
 ├── services/
 │   ├── anggota.service.ts
@@ -533,6 +539,7 @@ api/src/
 │   ├── jurnal.service.ts       # Jurnal otomatis + laporan keuangan
 │   ├── tagihan.service.ts      # Auto-generate tagihan wajib
 │   ├── audit.service.ts        # Audit trail logging
+│   ├── shu.service.ts            # Hitung SHU, JMA/JUA, state machine
 │   └── dashboard.service.ts
 ├── middleware/
 │   ├── auth.ts                 # JWT verify
@@ -541,7 +548,7 @@ api/src/
 ├── lib/
 │   ├── config.ts               # Env config
 │   ├── db.ts                   # Drizzle client
-│   └── seed-akun.ts            # Seed chart of accounts
+│   └── seed-coa.ts             # Seed chart of accounts (COA)
 └── package.json
 
 admin/src/pages/
@@ -553,5 +560,6 @@ admin/src/pages/
 ├── BukuKas.tsx
 ├── Tagihan.tsx                 # Tagihan simpanan wajib
 ├── Laporan.tsx                 # Buku besar, neraca saldo, laba rugi, neraca
+├── SHU.tsx                     # SHU hitung & kelola pembagian
 └── AuditLog.tsx                # Riwayat aktivitas
 ```

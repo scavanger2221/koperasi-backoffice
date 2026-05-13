@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { listJurnal, getBukuKas, getBukuBesar, getNeracaSaldo, getLabaRugi, getNeraca } from "../services/jurnal.service.js";
+import { listJurnal, getBukuKas, getBukuBesar, getNeracaSaldo, getLabaRugi, getNeraca, getArusKas } from "../services/jurnal.service.js";
 
 export const jurnalController = {
   async list(c: Context) {
@@ -53,6 +53,15 @@ export const jurnalController = {
 
   async neraca(c: Context) {
     const result = await getNeraca();
+    return c.json({ success: true, data: result });
+  },
+
+  async arusKas(c: Context) {
+    const query = c.req.query();
+    const result = await getArusKas({
+      tanggalMulai: query.tanggalMulai,
+      tanggalSelesai: query.tanggalSelesai,
+    });
     return c.json({ success: true, data: result });
   },
 };

@@ -12,6 +12,7 @@ import { dashboardRoute } from "./routes/dashboard.route.js";
 import { jurnalRoute } from "./routes/jurnal.route.js";
 import { tagihanRoute } from "./routes/tagihan.route.js";
 import { auditRoute } from "./routes/audit.route.js";
+import { shuRoute } from "./routes/shu.route.js";
 
 const app = new Hono();
 
@@ -28,6 +29,7 @@ app.route("/api/dashboard", dashboardRoute);
 app.route("/api/jurnal", jurnalRoute);
 app.route("/api/tagihan", tagihanRoute);
 app.route("/api/audit", auditRoute);
+app.route("/api/shu", shuRoute);
 
 app.onError(errorHandler);
 

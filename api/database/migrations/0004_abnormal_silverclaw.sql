@@ -1,0 +1,40 @@
+CREATE TABLE `shu` (
+	`id` text PRIMARY KEY NOT NULL,
+	`periode` text NOT NULL,
+	`total_shu` text DEFAULT '0' NOT NULL,
+	`total_pendapatan` text DEFAULT '0' NOT NULL,
+	`total_biaya` text DEFAULT '0' NOT NULL,
+	`alokasi_anggota` text DEFAULT '40' NOT NULL,
+	`alokasi_cadangan` text DEFAULT '20' NOT NULL,
+	`alokasi_pengurus` text DEFAULT '10' NOT NULL,
+	`alokasi_pendidikan` text DEFAULT '5' NOT NULL,
+	`alokasi_sosial` text DEFAULT '5' NOT NULL,
+	`alokasi_lain` text DEFAULT '20' NOT NULL,
+	`dana_anggota` text DEFAULT '0' NOT NULL,
+	`dana_cadangan` text DEFAULT '0' NOT NULL,
+	`dana_pengurus` text DEFAULT '0' NOT NULL,
+	`dana_pendidikan` text DEFAULT '0' NOT NULL,
+	`dana_sosial` text DEFAULT '0' NOT NULL,
+	`dana_lain` text DEFAULT '0' NOT NULL,
+	`total_simpanan` text DEFAULT '0' NOT NULL,
+	`total_transaksi` text DEFAULT '0' NOT NULL,
+	`status` text DEFAULT 'draft' NOT NULL,
+	`keterangan` text,
+	`created_at` text DEFAULT (datetime('now')) NOT NULL,
+	`updated_at` text DEFAULT (datetime('now')) NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE `shu_anggota` (
+	`id` text PRIMARY KEY NOT NULL,
+	`shu_id` text NOT NULL,
+	`anggota_id` text NOT NULL,
+	`jma` text DEFAULT '0' NOT NULL,
+	`jua` text DEFAULT '0' NOT NULL,
+	`total` text DEFAULT '0' NOT NULL,
+	`simpanan_anggota` text DEFAULT '0' NOT NULL,
+	`transaksi_anggota` text DEFAULT '0' NOT NULL,
+	`status` text DEFAULT 'belum_dibagikan' NOT NULL,
+	`created_at` text DEFAULT (datetime('now')) NOT NULL,
+	FOREIGN KEY (`shu_id`) REFERENCES `shu`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`anggota_id`) REFERENCES `anggota`(`id`) ON UPDATE no action ON DELETE no action
+);
