@@ -50,7 +50,7 @@ export default function Login() {
 
           <div className="space-y-1.5">
             <label htmlFor="email" className="text-sm font-medium text-gray-900 dark:text-white">
-              Email
+              Email <span className="text-red-500">*</span>
             </label>
             <input
               id="email"
@@ -64,7 +64,7 @@ export default function Login() {
 
           <div className="space-y-1.5">
             <label htmlFor="password" className="text-sm font-medium text-gray-900 dark:text-white">
-              Password
+              Password <span className="text-red-500">*</span>
             </label>
             <input
               id="password"

@@ -264,7 +264,7 @@ export default function PinjamanPage() {
                 <div className="grid grid-cols-2 gap-3">
                   {/* Bunga */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="bunga" className="text-sm">Bunga (%/tahun)</Label>
+                    <Label htmlFor="bunga" className="text-sm">Bunga (%/tahun) <span className="text-red-500">*</span></Label>
                     <div className="relative">
                       <Input
                         id="bunga"
@@ -283,7 +283,7 @@ export default function PinjamanPage() {
 
                   {/* Tenor */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="tenor" className="text-sm">Tenor (bulan)</Label>
+                    <Label htmlFor="tenor" className="text-sm">Tenor (bulan) <span className="text-red-500">*</span></Label>
                     <div className="relative">
                       <Input
                         id="tenor"

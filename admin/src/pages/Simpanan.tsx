@@ -101,7 +101,7 @@ export default function SimpananPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Anggota</Label>
+                <Label className="text-xs font-semibold text-foreground">Anggota <span className="text-red-500">*</span></Label>
                 <Select name="anggotaId">
                   <SelectTrigger className="h-10 bg-muted border-border">
                     <SelectValue placeholder="Pilih anggota" />
@@ -117,7 +117,7 @@ export default function SimpananPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Jenis</Label>
+                  <Label className="text-xs font-semibold text-foreground">Jenis <span className="text-red-500">*</span></Label>
                   <Select name="jenis">
                     <SelectTrigger className="h-10 bg-muted border-border">
                       <SelectValue placeholder="Pilih jenis" />
@@ -131,17 +131,17 @@ export default function SimpananPage() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Jumlah (Rp)</Label>
+                  <Label className="text-xs font-semibold text-foreground">Jumlah <span className="text-red-500">*</span></Label>
                   <Input name="jumlah" type="number" className="h-10 bg-muted border-border" required />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tanggal</Label>
+                  <Label className="text-xs font-semibold text-foreground">Tanggal <span className="text-red-500">*</span></Label>
                   <Input name="tanggal" type="date" className="h-10 bg-muted border-border" required defaultValue={new Date().toISOString().split("T")[0]} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Metode</Label>
+                  <Label className="text-xs font-semibold text-foreground">Metode Bayar</Label>
                   <Select name="metodeBayar" defaultValue="tunai">
                     <SelectTrigger className="h-10 bg-muted border-border">
                       <SelectValue />

@@ -236,35 +236,35 @@ export default function Anggota() {
             <form onSubmit={handleCreate} className="space-y-4 mt-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Nama Lengkap</Label>
+                  <Label className="text-xs font-semibold text-foreground">Nama Lengkap <span className="text-red-500">*</span></Label>
                   <Input name="nama" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">NIK</Label>
+                  <Label className="text-xs font-semibold text-foreground">NIK <span className="text-red-500">*</span></Label>
                   <Input name="nik" maxLength={16} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tempat Lahir</Label>
+                  <Label className="text-xs font-semibold text-foreground">Tempat Lahir <span className="text-red-500">*</span></Label>
                   <Input name="tempatLahir" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tanggal Lahir</Label>
+                  <Label className="text-xs font-semibold text-foreground">Tanggal Lahir <span className="text-red-500">*</span></Label>
                   <Input name="tanggalLahir" type="date" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Alamat</Label>
+                <Label className="text-xs font-semibold text-foreground">Alamat <span className="text-red-500">*</span></Label>
                 <Input name="alamat" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Pekerjaan</Label>
+                  <Label className="text-xs font-semibold text-foreground">Pekerjaan <span className="text-red-500">*</span></Label>
                   <Input name="pekerjaan" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">No Telepon</Label>
+                  <Label className="text-xs font-semibold text-foreground">No Telepon <span className="text-red-500">*</span></Label>
                   <Input name="noTelepon" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
               </div>
@@ -312,35 +312,35 @@ export default function Anggota() {
             <form onSubmit={handleEdit} className="space-y-4 mt-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Nama Lengkap</Label>
+                  <Label className="text-xs font-semibold text-foreground">Nama Lengkap <span className="text-red-500">*</span></Label>
                   <Input name="nama" defaultValue={editForm.nama} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">NIK</Label>
+                  <Label className="text-xs font-semibold text-foreground">NIK <span className="text-red-500">*</span></Label>
                   <Input name="nik" defaultValue={editForm.nik} maxLength={16} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tempat Lahir</Label>
+                  <Label className="text-xs font-semibold text-foreground">Tempat Lahir <span className="text-red-500">*</span></Label>
                   <Input name="tempatLahir" defaultValue={editForm.tempatLahir} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tanggal Lahir</Label>
+                  <Label className="text-xs font-semibold text-foreground">Tanggal Lahir <span className="text-red-500">*</span></Label>
                   <Input name="tanggalLahir" defaultValue={editForm.tanggalLahir} type="date" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Alamat</Label>
+                <Label className="text-xs font-semibold text-foreground">Alamat <span className="text-red-500">*</span></Label>
                 <Input name="alamat" defaultValue={editForm.alamat} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Pekerjaan</Label>
+                  <Label className="text-xs font-semibold text-foreground">Pekerjaan <span className="text-red-500">*</span></Label>
                   <Input name="pekerjaan" defaultValue={editForm.pekerjaan} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">No Telepon</Label>
+                  <Label className="text-xs font-semibold text-foreground">No Telepon <span className="text-red-500">*</span></Label>
                   <Input name="noTelepon" defaultValue={editForm.noTelepon} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
                 </div>
               </div>
