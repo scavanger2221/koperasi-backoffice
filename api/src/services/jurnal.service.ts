@@ -367,6 +367,19 @@ export async function getNeraca() {
   const kewajiban = kewajibanAkun.map((a) => ({ akun: a, saldo: getSaldo(a) })).filter((r) => r.saldo !== 0);
   const ekuitas = ekuitasAkun.map((a) => ({ akun: a, saldo: getSaldo(a) })).filter((r) => r.saldo !== 0);
 
+  // Hitung laba berjalan (pendapatan - biaya) dari seluruh periode
+  // Laba berjalan ditambahkan ke ekuitas agar neraca balance
+  // sampai closing entry / jurnal penutup dijalankan
+  const labaRugi = await getLabaRugi({});
+  const labaBerjalan = labaRugi.labaRugi;
+
+  if (labaBerjalan !== 0) {
+    ekuitas.push({
+      akun: { id: "__laba_berjalan__", kode: "3-X", nama: "Laba Berjalan", tipe: "ekuitas", saldoNormal: "kredit" } as typeof akun.$inferSelect,
+      saldo: labaBerjalan,
+    });
+  }
+
   const totalAset = aset.reduce((s, r) => s + r.saldo, 0);
   const totalKewajiban = kewajiban.reduce((s, r) => s + r.saldo, 0);
   const totalEkuitas = ekuitas.reduce((s, r) => s + r.saldo, 0);
