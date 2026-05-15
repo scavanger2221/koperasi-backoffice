@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,8 +22,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form-field";
 import { api } from "@/lib/api";
 import { formatRupiah } from "@/lib/utils";
+import { rules, validate, type FieldErrors } from "@/lib/validation";
 import { useToast } from "@/hooks/useToast";
 
 interface ShuItem {
@@ -104,6 +105,7 @@ export default function SHUPage() {
   const [hitungOpen, setHitungOpen] = useState(false);
   const [selected, setSelected] = useState<ShuItem | null>(null);
   const [periodeHitung, setPeriodeHitung] = useState(new Date().getFullYear().toString());
+  const [hitungErrors, setHitungErrors] = useState<FieldErrors>({});
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -121,6 +123,7 @@ export default function SHUPage() {
     onSuccess: (res: any) => {
       queryClient.invalidateQueries({ queryKey: ["shu"] });
       setHitungOpen(false);
+      setHitungErrors({});
       toast(`SHU periode ${res?.data?.periode} berhasil dihitung`, "success");
     },
     onError: () => toast("Gagal menghitung SHU", "error"),
@@ -182,10 +185,12 @@ export default function SHUPage() {
   };
 
   const handleHitung = () => {
-    if (!periodeHitung.match(/^\d{4}$/)) {
-      toast("Format tahun tidak valid", "error");
-      return;
-    }
+    const errs = validate(
+      { periode: periodeHitung },
+      { periode: [rules.year("Tahun buku")] }
+    );
+    setHitungErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     hitungMutation.mutate(periodeHitung);
   };
 
@@ -206,7 +211,10 @@ export default function SHUPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 self-start">
-          <Dialog open={hitungOpen} onOpenChange={setHitungOpen}>
+          <Dialog open={hitungOpen} onOpenChange={(v) => {
+            setHitungOpen(v);
+            if (!v) setHitungErrors({});
+          }}>
             <Button
               className="bg-emerald-600 hover:bg-emerald-700 text-white h-9"
               onClick={() => setHitungOpen(true)}
@@ -222,25 +230,24 @@ export default function SHUPage() {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 mt-2">
-                <div className="space-y-1.5">
-                  <Label htmlFor="periode" className="text-sm">
-                    Tahun Buku <span className="text-red-500">*</span>
-                  </Label>
+                <FormField
+                  label="Tahun Buku"
+                  required
+                  error={hitungErrors.periode}
+                  hint="SHU akan dihitung dari pendapatan - biaya sepanjang tahun ini"
+                >
                   <Input
-                    id="periode"
                     type="number"
                     min="2020"
                     max="2099"
                     placeholder="2026"
                     value={periodeHitung}
-                    onChange={(e) => setPeriodeHitung(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setPeriodeHitung(e.target.value);
+                      setHitungErrors((prev) => ({ ...prev, periode: "" }));
+                    }}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    SHU akan dihitung dari{" "}
-                    <strong>pendapatan - biaya</strong> sepanjang tahun ini
-                  </p>
-                </div>
+                </FormField>
 
                 {hitungMutation.isError && (
                   <p className="text-sm text-red-600">

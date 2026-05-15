@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { HandCoins, Loader2, CheckCircle, Banknote, Eye, Plus, UserSearch, Calendar, AlertCircle, Check } from "lucide-react";
+import { HandCoins, Loader2, CheckCircle, Banknote, Eye, Plus, Calendar, AlertCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,9 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { FormField } from "@/components/ui/form-field";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import { formatRupiah } from "@/lib/utils";
+import { rules, validate, type FieldErrors } from "@/lib/validation";
 import { useToast } from "@/hooks/useToast";
 
 interface AngsuranItem {
@@ -79,6 +81,7 @@ export default function PinjamanPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<PinjamanItem | null>(null);
+  const [errors, setErrors] = useState<FieldErrors>({});
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -132,6 +135,7 @@ export default function PinjamanPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pinjaman"] });
       setCreateOpen(false);
+      setErrors({});
       setForm({
         anggotaId: "",
         jumlah: "",
@@ -174,6 +178,16 @@ export default function PinjamanPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const errs = validate(form, {
+      anggotaId: [rules.required("Anggota")],
+      jumlah: [rules.required("Jumlah pinjaman"), rules.positiveNumber("Jumlah pinjaman")],
+      bungaPersen: [rules.required("Bunga"), rules.range(0, 100, "Bunga")],
+      jangkaWaktu: [rules.required("Tenor"), rules.range(1, 60, "Tenor")],
+    });
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     createMutation.mutate({
       anggotaId: form.anggotaId,
       jumlah: form.jumlah,
@@ -197,7 +211,10 @@ export default function PinjamanPage() {
           <span className="text-sm font-bold text-foreground bg-card px-3 py-1.5 rounded-lg border border-border shadow-sm">
             Total: {formatRupiah(totalPinjaman)}
           </span>
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <Dialog open={createOpen} onOpenChange={(v) => {
+            setCreateOpen(v);
+            if (!v) setErrors({});
+          }}>
             <DialogTrigger asChild>
               <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-9">
                 <Plus className="w-4 h-4 mr-1" />
@@ -212,102 +229,91 @@ export default function PinjamanPage() {
                   Tambah Pinjaman Baru
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+              <form onSubmit={handleSubmit} className="space-y-4 mt-2" noValidate>
                 {/* Anggota */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="anggota" className="text-sm">Anggota <span className="text-red-500">*</span></Label>
-                  <Select
+                <FormField label="Anggota" required error={errors.anggotaId}>
+                  <SearchableSelect
                     value={form.anggotaId}
-                    onValueChange={(v) => setForm((f) => ({ ...f, anggotaId: v }))}
-                  >
-                    <SelectTrigger id="anggota" className="w-full">
-                      <SelectValue placeholder="Pilih anggota..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeAnggota.length === 0 && (
-                        <div className="px-3 py-2 text-sm text-muted-foreground">
-                          Tidak ada anggota aktif
-                        </div>
-                      )}
-                      {activeAnggota.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          <div className="flex items-center gap-2">
-                            <UserSearch className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span>{a.nama}</span>
-                            <span className="text-muted-foreground text-xs">({a.noAnggota})</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    onValueChange={(v) => {
+                      setForm((f) => ({ ...f, anggotaId: v }));
+                      setErrors((prev) => ({ ...prev, anggotaId: "" }));
+                    }}
+                    options={activeAnggota.map((a) => ({
+                      value: a.id,
+                      label: `${a.nama}`,
+                      searchLabel: `${a.nama} ${a.noAnggota}`,
+                      hint: a.noAnggota,
+                    }))}
+                    placeholder="Pilih anggota..."
+                    emptyText="Tidak ada anggota aktif"
+                  />
+                </FormField>
 
                 {/* Jumlah */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="jumlah" className="text-sm">Jumlah Pinjaman <span className="text-red-500">*</span></Label>
+                <FormField label="Jumlah Pinjaman" required error={errors.jumlah}>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">Rp</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground z-10">Rp</span>
                     <Input
-                      id="jumlah"
                       type="number"
                       min="100000"
                       step="100000"
                       placeholder="5.000.000"
                       className="pl-10"
                       value={form.jumlah}
-                      onChange={(e) => setForm((f) => ({ ...f, jumlah: e.target.value }))}
-                      required
+                      onChange={(e) => {
+                        setForm((f) => ({ ...f, jumlah: e.target.value }));
+                        setErrors((prev) => ({ ...prev, jumlah: "" }));
+                      }}
                     />
                   </div>
-                </div>
+                </FormField>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Bunga */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="bunga" className="text-sm">Bunga (%/tahun) <span className="text-red-500">*</span></Label>
+                  <FormField label="Bunga (%/tahun)" required error={errors.bungaPersen}>
                     <div className="relative">
                       <Input
-                        id="bunga"
                         type="number"
                         min="0"
                         max="100"
                         step="0.1"
                         placeholder="12"
                         value={form.bungaPersen}
-                        onChange={(e) => setForm((f) => ({ ...f, bungaPersen: e.target.value }))}
-                        required
+                        onChange={(e) => {
+                          setForm((f) => ({ ...f, bungaPersen: e.target.value }));
+                          setErrors((prev) => ({ ...prev, bungaPersen: "" }));
+                        }}
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
                     </div>
-                  </div>
+                  </FormField>
 
                   {/* Tenor */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="tenor" className="text-sm">Tenor (bulan) <span className="text-red-500">*</span></Label>
+                  <FormField label="Tenor (bulan)" required error={errors.jangkaWaktu}>
                     <div className="relative">
                       <Input
-                        id="tenor"
                         type="number"
                         min="1"
                         max="60"
                         placeholder="12"
                         value={form.jangkaWaktu}
-                        onChange={(e) => setForm((f) => ({ ...f, jangkaWaktu: e.target.value }))}
-                        required
+                        onChange={(e) => {
+                          setForm((f) => ({ ...f, jangkaWaktu: e.target.value }));
+                          setErrors((prev) => ({ ...prev, jangkaWaktu: "" }));
+                        }}
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">bln</span>
                     </div>
-                  </div>
+                  </FormField>
                 </div>
 
                 {/* Jenis Bunga */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="jenisBunga" className="text-sm">Jenis Bunga</Label>
+                <FormField label="Jenis Bunga">
                   <Select
                     value={form.jenisBunga}
                     onValueChange={(v) => setForm((f) => ({ ...f, jenisBunga: v }))}
                   >
-                    <SelectTrigger id="jenisBunga">
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -317,20 +323,18 @@ export default function PinjamanPage() {
                       <SelectItem value="syariah">Syariah</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </FormField>
 
                 {/* Keterangan */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="keterangan" className="text-sm">Keterangan</Label>
+                <FormField label="Keterangan">
                   <textarea
-                    id="keterangan"
                     rows={2}
                     placeholder="Opsional..."
                     className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
                     value={form.keterangan}
                     onChange={(e) => setForm((f) => ({ ...f, keterangan: e.target.value }))}
                   />
-                </div>
+                </FormField>
 
                 {/* Preview */}
                 {form.jumlah && form.bungaPersen && form.jangkaWaktu && (
@@ -351,6 +355,12 @@ export default function PinjamanPage() {
                         )
                       )}
                     </p>
+                  </div>
+                )}
+
+                {Object.keys(errors).length > 0 && (
+                  <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3 text-xs text-red-700 dark:text-red-400">
+                    Harap perbaiki <strong>{Object.keys(errors).length}</strong> field yang bermasalah sebelum menyimpan
                   </div>
                 )}
 

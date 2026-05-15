@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Loader2, Wallet, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,8 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { FormField } from "@/components/ui/form-field";
 import { api } from "@/lib/api";
 import { formatRupiah, formatDate } from "@/lib/utils";
+import { rules, validate, type FieldErrors } from "@/lib/validation";
 import { useToast } from "@/hooks/useToast";
 
 interface SimpananItem {
@@ -43,6 +45,8 @@ const jenisColors: Record<string, string> = {
 
 export default function SimpananPage() {
   const [open, setOpen] = useState(false);
+  const [formAnggota, setFormAnggota] = useState("");
+  const [errors, setErrors] = useState<FieldErrors>({});
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -61,6 +65,8 @@ export default function SimpananPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["simpanan"] });
       setOpen(false);
+      setFormAnggota("");
+      setErrors({});
       toast("Setoran berhasil dicatat", "success");
     },
     onError: () => toast("Gagal mencatat setoran", "error"),
@@ -69,8 +75,24 @@ export default function SimpananPage() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const values = {
+      anggotaId: formAnggota,
+      jenis: (form.get("jenis") as string) || "",
+      jumlah: (form.get("jumlah") as string) || "",
+      tanggal: (form.get("tanggal") as string) || "",
+    };
+
+    const errs = validate(values, {
+      anggotaId: [rules.required("Anggota")],
+      jenis: [rules.required("Jenis simpanan")],
+      jumlah: [rules.required("Jumlah"), rules.positiveNumber("Jumlah")],
+      tanggal: [rules.required("Tanggal")],
+    });
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     createMutation.mutate({
-      anggotaId: form.get("anggotaId"),
+      anggotaId: formAnggota,
       jenis: form.get("jenis"),
       jumlah: form.get("jumlah"),
       tanggal: form.get("tanggal"),
@@ -99,26 +121,32 @@ export default function SimpananPage() {
             <DialogHeader>
               <DialogTitle className="text-lg">Catat Setoran Baru</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Anggota <span className="text-red-500">*</span></Label>
-                <Select name="anggotaId">
-                  <SelectTrigger className="h-10 bg-muted border-border">
-                    <SelectValue placeholder="Pilih anggota" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {anggotaList?.data?.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.noAnggota} - {a.nama}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2" noValidate>
+              <FormField label="Anggota" required error={errors.anggotaId}>
+                <SearchableSelect
+                  name="anggotaId"
+                  value={formAnggota}
+                  onValueChange={(v) => {
+                    setFormAnggota(v);
+                    setErrors((prev) => ({ ...prev, anggotaId: "" }));
+                  }}
+                  options={(anggotaList?.data || []).map((a: any) => ({
+                    value: a.id,
+                    label: `${a.noAnggota} - ${a.nama}`,
+                    searchLabel: `${a.nama} ${a.noAnggota}`,
+                    hint: a.noAnggota,
+                  }))}
+                  placeholder="Pilih anggota"
+                  triggerClassName="h-10 bg-muted border-border"
+                />
+              </FormField>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Jenis <span className="text-red-500">*</span></Label>
-                  <Select name="jenis">
+                <FormField label="Jenis" required error={errors.jenis}>
+                  <Select
+                    name="jenis"
+                    onValueChange={() => setErrors((prev) => ({ ...prev, jenis: "" }))}
+                  >
                     <SelectTrigger className="h-10 bg-muted border-border">
                       <SelectValue placeholder="Pilih jenis" />
                     </SelectTrigger>
@@ -129,19 +157,33 @@ export default function SimpananPage() {
                       <SelectItem value="deposito">Deposito</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Jumlah <span className="text-red-500">*</span></Label>
-                  <Input name="jumlah" type="number" className="h-10 bg-muted border-border" required />
-                </div>
+                </FormField>
+
+                <FormField label="Jumlah" required error={errors.jumlah}>
+                  <Input
+                    name="jumlah"
+                    type="number"
+                    min="1000"
+                    step="500"
+                    placeholder="Rp"
+                    className="h-10 bg-muted border-border"
+                    onChange={() => setErrors((prev) => ({ ...prev, jumlah: "" }))}
+                  />
+                </FormField>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tanggal <span className="text-red-500">*</span></Label>
-                  <Input name="tanggal" type="date" className="h-10 bg-muted border-border" required defaultValue={new Date().toISOString().split("T")[0]} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Metode Bayar</Label>
+                <FormField label="Tanggal" required error={errors.tanggal}>
+                  <Input
+                    name="tanggal"
+                    type="date"
+                    className="h-10 bg-muted border-border"
+                    defaultValue={new Date().toISOString().split("T")[0]}
+                    onChange={() => setErrors((prev) => ({ ...prev, tanggal: "" }))}
+                  />
+                </FormField>
+
+                <FormField label="Metode Bayar">
                   <Select name="metodeBayar" defaultValue="tunai">
                     <SelectTrigger className="h-10 bg-muted border-border">
                       <SelectValue />
@@ -152,8 +194,15 @@ export default function SimpananPage() {
                       <SelectItem value="qris">QRIS</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
+                </FormField>
               </div>
+
+              {Object.keys(errors).length > 0 && (
+                <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3 text-xs text-red-700 dark:text-red-400">
+                  Harap perbaiki <strong>{Object.keys(errors).length}</strong> field yang bermasalah sebelum menyimpan
+                </div>
+              )}
+
               <Button type="submit" className="w-full h-10 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900" disabled={createMutation.isPending}>
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Simpan Setoran"}
               </Button>

@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form-field";
 import { Receipt, Plus, AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
+import { rules, validate, type FieldErrors } from "@/lib/validation";
 
 interface Tagihan {
   id: string;
@@ -49,6 +51,7 @@ export default function TagihanPage() {
   const [generatePeriode, setGeneratePeriode] = useState(new Date().toISOString().slice(0, 7));
   const [generateJumlah, setGenerateJumlah] = useState("50000");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   useEffect(() => {
     fetchTagihan();
@@ -75,6 +78,16 @@ export default function TagihanPage() {
   };
 
   const handleGenerate = async () => {
+    const errs = validate(
+      { periode: generatePeriode, jumlah: generateJumlah },
+      {
+        periode: [rules.required("Periode")],
+        jumlah: [rules.required("Jumlah"), rules.positiveNumber("Jumlah")],
+      }
+    );
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     setGenerateLoading(true);
     try {
       await api("/api/tagihan/generate", {
@@ -82,6 +95,7 @@ export default function TagihanPage() {
         body: JSON.stringify({ periode: generatePeriode, jumlah: generateJumlah }),
       });
       setDialogOpen(false);
+      setErrors({});
       fetchTagihan();
       fetchSummary();
       toast("Tagihan berhasil digenerate", "success");
@@ -125,7 +139,10 @@ export default function TagihanPage() {
           <h1 className="text-2xl font-bold text-foreground">Tagihan Simpanan Wajib</h1>
           <p className="text-muted-foreground text-sm mt-1">Kelola tagihan simpanan wajib bulanan anggota</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(v) => {
+        setDialogOpen(v);
+        if (!v) setErrors({});
+      }}>
           <DialogTrigger asChild>
             <Button><Plus className="w-4 h-4 mr-2" />Generate Tagihan</Button>
           </DialogTrigger>
@@ -134,14 +151,28 @@ export default function TagihanPage() {
               <DialogTitle>Generate Tagihan Baru</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
-              <div>
-                <label className="text-sm font-medium">Periode (YYYY-MM)</label>
-                <Input value={generatePeriode} onChange={(e) => setGeneratePeriode(e.target.value)} placeholder="2025-05" />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Jumlah per Anggota</label>
-                <Input value={generateJumlah} onChange={(e) => setGenerateJumlah(e.target.value)} type="number" />
-              </div>
+              <FormField label="Periode" required error={errors.periode} hint="Format: YYYY-MM">
+                <Input
+                  value={generatePeriode}
+                  onChange={(e) => {
+                    setGeneratePeriode(e.target.value);
+                    setErrors((prev) => ({ ...prev, periode: "" }));
+                  }}
+                  placeholder="2026-05"
+                />
+              </FormField>
+              <FormField label="Jumlah per Anggota" required error={errors.jumlah}>
+                <Input
+                  value={generateJumlah}
+                  onChange={(e) => {
+                    setGenerateJumlah(e.target.value);
+                    setErrors((prev) => ({ ...prev, jumlah: "" }));
+                  }}
+                  type="number"
+                  min="1000"
+                  step="5000"
+                />
+              </FormField>
               <Button onClick={handleGenerate} disabled={generateLoading} className="w-full">
                 {generateLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Generate

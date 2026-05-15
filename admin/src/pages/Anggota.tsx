@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Loader2, UserX, UserCheck, Pencil, Users, ChevronRight, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -13,8 +12,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form-field";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { rules, validate, type FieldErrors } from "@/lib/validation";
 import { useToast } from "@/hooks/useToast";
 
 interface AnggotaItem {
@@ -88,6 +89,8 @@ export default function Anggota() {
   const [printOpen, setPrintOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [printId, setPrintId] = useState<string | null>(null);
+  const [createErrors, setCreateErrors] = useState<FieldErrors>({});
+  const [editErrors, setEditErrors] = useState<FieldErrors>({});
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -114,6 +117,7 @@ export default function Anggota() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["anggota"] });
       setCreateOpen(false);
+      setCreateErrors({});
       toast("Anggota berhasil ditambahkan", "success");
     },
     onError: () => toast("Gagal menambahkan anggota", "error"),
@@ -127,6 +131,7 @@ export default function Anggota() {
       queryClient.invalidateQueries({ queryKey: ["anggota-detail"] });
       setEditOpen(false);
       setEditingId(null);
+      setEditErrors({});
       toast("Data anggota berhasil diperbarui", "success");
     },
     onError: () => toast("Gagal memperbarui anggota", "error"),
@@ -148,6 +153,7 @@ export default function Anggota() {
   const openEdit = (id: string) => {
     setEditingId(id);
     setEditOpen(true);
+    setEditErrors({});
   };
 
   const openPrint = (id: string) => {
@@ -158,6 +164,30 @@ export default function Anggota() {
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const values = {
+      nama: (form.get("nama") as string) || "",
+      nik: (form.get("nik") as string) || "",
+      tempatLahir: (form.get("tempatLahir") as string) || "",
+      tanggalLahir: (form.get("tanggalLahir") as string) || "",
+      alamat: (form.get("alamat") as string) || "",
+      pekerjaan: (form.get("pekerjaan") as string) || "",
+      noTelepon: (form.get("noTelepon") as string) || "",
+      email: (form.get("email") as string) || "",
+    };
+
+    const errs = validate(values, {
+      nama: [rules.required("Nama"), rules.minLength(3, "Nama")],
+      nik: [rules.nik()],
+      tempatLahir: [rules.required("Tempat Lahir")],
+      tanggalLahir: [rules.required("Tanggal Lahir"), rules.minAge(17)],
+      alamat: [rules.required("Alamat"), rules.minLength(5, "Alamat")],
+      pekerjaan: [rules.required("Pekerjaan")],
+      noTelepon: [rules.phone()],
+      email: [rules.email()],
+    });
+    setCreateErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     createMutation.mutate({
       nama: form.get("nama"),
       nik: form.get("nik"),
@@ -174,11 +204,33 @@ export default function Anggota() {
     e.preventDefault();
     if (!editingId) return;
     const form = new FormData(e.currentTarget);
+    const values = {
+      nama: (form.get("nama") as string) || "",
+      nik: (form.get("nik") as string) || "",
+      tempatLahir: (form.get("tempatLahir") as string) || "",
+      tanggalLahir: (form.get("tanggalLahir") as string) || "",
+      alamat: (form.get("alamat") as string) || "",
+      pekerjaan: (form.get("pekerjaan") as string) || "",
+      noTelepon: (form.get("noTelepon") as string) || "",
+      email: (form.get("email") as string) || "",
+    };
+
+    const errs = validate(values, {
+      nama: [rules.required("Nama"), rules.minLength(3, "Nama")],
+      nik: [rules.nik()],
+      tempatLahir: [rules.required("Tempat Lahir")],
+      tanggalLahir: [rules.required("Tanggal Lahir")],
+      alamat: [rules.required("Alamat"), rules.minLength(5, "Alamat")],
+      pekerjaan: [rules.required("Pekerjaan")],
+      noTelepon: [rules.phone()],
+      email: [rules.email()],
+    });
+    setEditErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     const body: any = {};
-    const fields = ["nama", "nik", "tempatLahir", "tanggalLahir", "alamat", "pekerjaan", "noTelepon", "email"];
-    for (const f of fields) {
-      const v = form.get(f);
-      if (v) body[f] = v;
+    for (const [key, val] of Object.entries(values)) {
+      if (val) body[key] = val;
     }
     updateMutation.mutate({ id: editingId, body });
   };
@@ -222,7 +274,10 @@ export default function Anggota() {
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Daftar Anggota</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Kelola data anggota koperasi</p>
         </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <Dialog open={createOpen} onOpenChange={(v) => {
+          setCreateOpen(v);
+          if (!v) setCreateErrors({});
+        }}>
           <DialogTrigger asChild>
             <Button className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900">
               <Plus className="w-4 h-4 mr-1.5" />
@@ -233,45 +288,80 @@ export default function Anggota() {
             <DialogHeader>
               <DialogTitle className="text-lg">Tambah Anggota Baru</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4 mt-2">
+            <form onSubmit={handleCreate} className="space-y-4 mt-2" noValidate>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Nama Lengkap <span className="text-red-500">*</span></Label>
-                  <Input name="nama" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">NIK <span className="text-red-500">*</span></Label>
-                  <Input name="nik" maxLength={16} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tempat Lahir <span className="text-red-500">*</span></Label>
-                  <Input name="tempatLahir" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tanggal Lahir <span className="text-red-500">*</span></Label>
-                  <Input name="tanggalLahir" type="date" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Alamat <span className="text-red-500">*</span></Label>
-                <Input name="alamat" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
+                <FormField label="Nama Lengkap" required error={createErrors.nama}>
+                  <Input
+                    name="nama"
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setCreateErrors((prev) => ({ ...prev, nama: "" }))}
+                  />
+                </FormField>
+                <FormField label="NIK" required error={createErrors.nik} hint="16 digit angka">
+                  <Input
+                    name="nik"
+                    maxLength={16}
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setCreateErrors((prev) => ({ ...prev, nik: "" }))}
+                  />
+                </FormField>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Pekerjaan <span className="text-red-500">*</span></Label>
-                  <Input name="pekerjaan" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">No Telepon <span className="text-red-500">*</span></Label>
-                  <Input name="noTelepon" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
+                <FormField label="Tempat Lahir" required error={createErrors.tempatLahir}>
+                  <Input
+                    name="tempatLahir"
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setCreateErrors((prev) => ({ ...prev, tempatLahir: "" }))}
+                  />
+                </FormField>
+                <FormField label="Tanggal Lahir" required error={createErrors.tanggalLahir} hint="Usia minimal 17 tahun">
+                  <Input
+                    name="tanggalLahir"
+                    type="date"
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setCreateErrors((prev) => ({ ...prev, tanggalLahir: "" }))}
+                  />
+                </FormField>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Email (opsional)</Label>
-                <Input name="email" type="email" className="h-10 bg-muted border-gray-200 dark:border-gray-700" />
+              <FormField label="Alamat" required error={createErrors.alamat}>
+                <Input
+                  name="alamat"
+                  className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                  onChange={() => setCreateErrors((prev) => ({ ...prev, alamat: "" }))}
+                />
+              </FormField>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Pekerjaan" required error={createErrors.pekerjaan}>
+                  <Input
+                    name="pekerjaan"
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setCreateErrors((prev) => ({ ...prev, pekerjaan: "" }))}
+                  />
+                </FormField>
+                <FormField label="No Telepon" required error={createErrors.noTelepon} hint="Mulai dengan 0, 9-14 digit">
+                  <Input
+                    name="noTelepon"
+                    type="tel"
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setCreateErrors((prev) => ({ ...prev, noTelepon: "" }))}
+                  />
+                </FormField>
               </div>
+              <FormField label="Email" error={createErrors.email}>
+                <Input
+                  name="email"
+                  type="email"
+                  className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                  onChange={() => setCreateErrors((prev) => ({ ...prev, email: "" }))}
+                />
+              </FormField>
+
+              {Object.keys(createErrors).length > 0 && (
+                <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3 text-xs text-red-700 dark:text-red-400">
+                  Harap perbaiki <strong>{Object.keys(createErrors).length}</strong> field yang bermasalah sebelum menyimpan
+                </div>
+              )}
+
               <Button type="submit" className="w-full h-10 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900" disabled={createMutation.isPending}>
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Simpan Anggota"}
               </Button>
@@ -309,45 +399,88 @@ export default function Anggota() {
             <DialogTitle className="text-lg">Edit Anggota</DialogTitle>
           </DialogHeader>
           {editForm ? (
-            <form onSubmit={handleEdit} className="space-y-4 mt-2">
+            <form onSubmit={handleEdit} className="space-y-4 mt-2" noValidate>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Nama Lengkap <span className="text-red-500">*</span></Label>
-                  <Input name="nama" defaultValue={editForm.nama} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">NIK <span className="text-red-500">*</span></Label>
-                  <Input name="nik" defaultValue={editForm.nik} maxLength={16} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tempat Lahir <span className="text-red-500">*</span></Label>
-                  <Input name="tempatLahir" defaultValue={editForm.tempatLahir} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Tanggal Lahir <span className="text-red-500">*</span></Label>
-                  <Input name="tanggalLahir" defaultValue={editForm.tanggalLahir} type="date" className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Alamat <span className="text-red-500">*</span></Label>
-                <Input name="alamat" defaultValue={editForm.alamat} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
+                <FormField label="Nama Lengkap" required error={editErrors.nama}>
+                  <Input
+                    name="nama"
+                    defaultValue={editForm.nama}
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setEditErrors((prev) => ({ ...prev, nama: "" }))}
+                  />
+                </FormField>
+                <FormField label="NIK" required error={editErrors.nik} hint="16 digit angka">
+                  <Input
+                    name="nik"
+                    defaultValue={editForm.nik}
+                    maxLength={16}
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setEditErrors((prev) => ({ ...prev, nik: "" }))}
+                  />
+                </FormField>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Pekerjaan <span className="text-red-500">*</span></Label>
-                  <Input name="pekerjaan" defaultValue={editForm.pekerjaan} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">No Telepon <span className="text-red-500">*</span></Label>
-                  <Input name="noTelepon" defaultValue={editForm.noTelepon} className="h-10 bg-muted border-gray-200 dark:border-gray-700" required />
-                </div>
+                <FormField label="Tempat Lahir" required error={editErrors.tempatLahir}>
+                  <Input
+                    name="tempatLahir"
+                    defaultValue={editForm.tempatLahir}
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setEditErrors((prev) => ({ ...prev, tempatLahir: "" }))}
+                  />
+                </FormField>
+                <FormField label="Tanggal Lahir" required error={editErrors.tanggalLahir}>
+                  <Input
+                    name="tanggalLahir"
+                    defaultValue={editForm.tanggalLahir}
+                    type="date"
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setEditErrors((prev) => ({ ...prev, tanggalLahir: "" }))}
+                  />
+                </FormField>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-foreground">Email</Label>
-                <Input name="email" defaultValue={editForm.email || ""} type="email" className="h-10 bg-muted border-gray-200 dark:border-gray-700" />
+              <FormField label="Alamat" required error={editErrors.alamat}>
+                <Input
+                  name="alamat"
+                  defaultValue={editForm.alamat}
+                  className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                  onChange={() => setEditErrors((prev) => ({ ...prev, alamat: "" }))}
+                />
+              </FormField>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField label="Pekerjaan" required error={editErrors.pekerjaan}>
+                  <Input
+                    name="pekerjaan"
+                    defaultValue={editForm.pekerjaan}
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setEditErrors((prev) => ({ ...prev, pekerjaan: "" }))}
+                  />
+                </FormField>
+                <FormField label="No Telepon" required error={editErrors.noTelepon} hint="Mulai dengan 0, 9-14 digit">
+                  <Input
+                    name="noTelepon"
+                    defaultValue={editForm.noTelepon}
+                    type="tel"
+                    className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                    onChange={() => setEditErrors((prev) => ({ ...prev, noTelepon: "" }))}
+                  />
+                </FormField>
               </div>
+              <FormField label="Email" error={editErrors.email}>
+                <Input
+                  name="email"
+                  defaultValue={editForm.email || ""}
+                  type="email"
+                  className="h-10 bg-muted border-gray-200 dark:border-gray-700"
+                  onChange={() => setEditErrors((prev) => ({ ...prev, email: "" }))}
+                />
+              </FormField>
+
+              {Object.keys(editErrors).length > 0 && (
+                <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3 text-xs text-red-700 dark:text-red-400">
+                  Harap perbaiki <strong>{Object.keys(editErrors).length}</strong> field yang bermasalah sebelum menyimpan
+                </div>
+              )}
+
               <Button type="submit" className="w-full h-10 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Simpan Perubahan"}
               </Button>

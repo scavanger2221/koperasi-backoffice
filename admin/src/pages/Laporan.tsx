@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BookOpen, Scale, TrendingUp, FileBarChart, Wallet, Loader2 } from "lucide-react";
@@ -194,16 +194,18 @@ export default function LaporanPage() {
               <CardTitle className="text-base">Filter Buku Besar</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-4">
-              <Select value={selectedAkun} onValueChange={setSelectedAkun}>
-                <SelectTrigger className="w-[280px]">
-                  <SelectValue placeholder="Pilih akun" />
-                </SelectTrigger>
-                <SelectContent>
-                  {akunList.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>{a.kode} - {a.nama}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={selectedAkun}
+                onValueChange={setSelectedAkun}
+                options={akunList.map((a) => ({
+                  value: a.id,
+                  label: `${a.kode} - ${a.nama}`,
+                  searchLabel: `${a.kode} ${a.nama} ${a.tipe}`,
+                  hint: a.tipe,
+                }))}
+                placeholder="Pilih akun"
+                triggerClassName="w-[280px]"
+              />
               <Input type="date" value={periodeMulai} onChange={(e) => setPeriodeMulai(e.target.value)} className="w-[160px]" placeholder="Dari" />
               <Input type="date" value={periodeSelesai} onChange={(e) => setPeriodeSelesai(e.target.value)} className="w-[160px]" placeholder="Sampai" />
               <Button onClick={fetchBukuBesar} disabled={!selectedAkun || loading}>
