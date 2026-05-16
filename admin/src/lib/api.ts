@@ -1,6 +1,26 @@
 /// <reference types="vite/client" />
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
+export function getToken() {
+  return localStorage.getItem("token");
+}
+
+export async function downloadBlob(path: string, filename: string) {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`);
+  const blob = await res.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem("token");
   const res = await fetch(`${API_BASE}${path}`, {

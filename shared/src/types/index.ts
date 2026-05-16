@@ -106,6 +106,60 @@ export interface ShuAnggota {
 
 export type ShuStatus = "draft" | "dikonfirmasi" | "disahkan" | "dibagikan";
 
+export type RatStatus = "draft" | "dipublikasi" | "voting" | "disahkan" | "diperpanjang";
+export type RatAgendaHasil = "setuju" | "ditolak" | "ditunda";
+export type RatDokumenTipe = "lpj_pengurus" | "laporan_keuangan" | "laporan_pengawas" | "shu" | "rencana_kerja" | "rapb" | "notulensi" | "lain";
+
+// --- RAT ---
+export interface Rat {
+  id: string;
+  periode: string; // YYYY
+  status: RatStatus;
+  tanggalRAT: string;
+  tempat: string;
+  catatan?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RatAgenda {
+  id: string;
+  ratId: string;
+  judul: string;
+  hasilVoting?: RatAgendaHasil;
+  catatan?: string;
+}
+
+export interface RatDokumen {
+  id: string;
+  ratId: string;
+  nama: string;
+  tipe: RatDokumenTipe;
+  status: "disiapkan" | "final";
+  url?: string;
+}
+
+export interface RatKehadiran {
+  id: string;
+  ratId: string;
+  anggotaId: string;
+  hadir: boolean;
+  suratKuasa: boolean;
+  anggota?: {
+    nama: string;
+    noAnggota: string;
+  };
+}
+
+export interface RatDetail extends Rat {
+  agendaList: RatAgenda[];
+  dokumenList: RatDokumen[];
+  kehadiranList: RatKehadiran[];
+  totalAnggota: number;
+  totalHadir: number;
+  kuorum: boolean;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;

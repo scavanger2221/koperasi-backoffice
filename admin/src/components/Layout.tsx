@@ -11,18 +11,28 @@ import {
   Bell,
   ChevronDown,
   Building2,
-  Settings,
   Moon,
   Sun,
   Receipt,
   ClipboardList,
   BarChart3,
   PiggyBank,
+  UserCog,
+  Key,
+  Lock,
+  Loader2,
 } from "lucide-react";
 import { CommandPalette } from "./CommandPalette";
 import { useAuth } from "@/hooks/useAuth";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FormField } from "@/components/ui/form-field";
+import { rules, validate, type FieldErrors } from "@/lib/validation";
 
 const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
@@ -34,15 +44,22 @@ const navItems = [
   { label: "Laporan", icon: BarChart3, path: "/laporan" },
   { label: "Audit Log", icon: ClipboardList, path: "/audit" },
   { label: "SHU", icon: PiggyBank, path: "/shu" },
+  { label: "RAT", icon: Building2, path: "/rat" },
+  { label: "Pengguna", icon: UserCog, path: "/users" },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [pwForm, setPwForm] = useState({ passwordLama: "", passwordBaru: "" });
+  const [pwErrors, setPwErrors] = useState<FieldErrors>({});
+  const [pwLoading, setPwLoading] = useState(false);
   const { user, logout } = useAuth();
   const { isDark, toggle } = useDarkMode();
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleLogout = () => {
     logout();
@@ -104,9 +121,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                       <p className="text-sm text-muted-foreground">{user?.email}</p>
                     </div>
                     <div className="p-1.5">
-                      <button className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors">
-                        <Settings className="w-4 h-4 text-muted-foreground" />
-                        Pengaturan
+                      <button
+                        onClick={() => { setPasswordOpen(true); setUserMenuOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+                      >
+                        <Key className="w-4 h-4 text-muted-foreground" />
+                        Ganti Password
                       </button>
                       <button
                         onClick={() => { toggle(); setUserMenuOpen(false); }}
@@ -208,6 +228,70 @@ export function Layout({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </nav>
+
+      {/* Ganti Password Dialog */}
+      <Dialog open={passwordOpen} onOpenChange={(v) => { setPasswordOpen(v); if (!v) { setPwErrors({}); setPwForm({ passwordLama: "", passwordBaru: "" }); } }}>
+        <DialogContent className="max-w-sm border-0 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <Lock className="w-5 h-5 text-emerald-600" />
+              Ganti Password
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <FormField label="Password Lama" required error={pwErrors.passwordLama}>
+              <Input
+                type="password"
+                value={pwForm.passwordLama}
+                onChange={(e) => { setPwForm({ ...pwForm, passwordLama: e.target.value }); setPwErrors((prev) => ({ ...prev, passwordLama: "" })); }}
+                placeholder="Password saat ini"
+              />
+            </FormField>
+            <FormField label="Password Baru" required error={pwErrors.passwordBaru}>
+              <Input
+                type="password"
+                value={pwForm.passwordBaru}
+                onChange={(e) => { setPwForm({ ...pwForm, passwordBaru: e.target.value }); setPwErrors((prev) => ({ ...prev, passwordBaru: "" })); }}
+                placeholder="Minimal 6 karakter"
+              />
+            </FormField>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => { setPasswordOpen(false); setPwErrors({}); setPwForm({ passwordLama: "", passwordBaru: "" }); }}>Batal</Button>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                disabled={pwLoading}
+                onClick={async () => {
+                  const errs = validate(pwForm, {
+                    passwordLama: [rules.required("Password lama"), rules.minLength(6, "Password lama")],
+                    passwordBaru: [rules.required("Password baru"), rules.minLength(6, "Password baru")],
+                  });
+                  setPwErrors(errs);
+                  if (Object.keys(errs).length > 0) return;
+
+                  setPwLoading(true);
+                  try {
+                    await api("/api/auth/password", {
+                      method: "PATCH",
+                      body: JSON.stringify(pwForm),
+                    });
+                    toast("Password berhasil diubah", "success");
+                    setPasswordOpen(false);
+                    setPwForm({ passwordLama: "", passwordBaru: "" });
+                    setPwErrors({});
+                  } catch (err: any) {
+                    toast(err?.message || "Gagal mengubah password", "error");
+                  } finally {
+                    setPwLoading(false);
+                  }
+                }}
+              >
+                {pwLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                Simpan
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

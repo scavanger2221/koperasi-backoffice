@@ -15,6 +15,13 @@ export const authController = {
     return c.json({ success: true, data: result });
   },
 
+  async changePassword(c: Context) {
+    const user = c.get("user" as any) as AuthContext["user"];
+    const { passwordLama, passwordBaru } = await c.req.json();
+    const result = await authService.changePassword(user.id, passwordLama, passwordBaru);
+    return c.json({ success: true, data: result });
+  },
+
   async me(c: Context) {
     const user = c.get("user" as any) as AuthContext["user"];
     const result = await authService.me(user.id);

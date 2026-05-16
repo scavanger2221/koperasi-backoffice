@@ -12,6 +12,8 @@ import LaporanPage from "@/pages/Laporan";
 import TagihanPage from "@/pages/Tagihan";
 import AuditLogPage from "@/pages/AuditLog";
 import SHUPage from "@/pages/SHU";
+import RATPage from "@/pages/RAT";
+import UsersPage from "@/pages/Users";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, ready } = useAuth();
@@ -101,6 +103,22 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <SHUPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/rat"
+        element={
+          <PrivateRoute>
+            <RATPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <PrivateRoute>
+            <UsersPage />
           </PrivateRoute>
         }
       />

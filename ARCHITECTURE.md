@@ -371,6 +371,14 @@ GET    /api/laporan/buku-besar    → Buku besar
 GET    /api/rat                   → List RAT
 POST   /api/rat                   → Buat RAT
 GET    /api/rat/:id               → Detail RAT
+PATCH  /api/rat/:id/publikasi     → Publikasi RAT
+PATCH  /api/rat/:id/mulai-voting  → Mulai voting
+PATCH  /api/rat/:id/tutup-voting  → Tutup voting
+PATCH  /api/rat/:id/sahkan        → Sahkan RAT
+PATCH  /api/rat/:id/perpanjang    → Perpanjang RAT
+POST   /api/rat/:id/hadir         → Catat kehadiran
+POST   /api/rat/:id/vote          → Vote agenda
+POST   /api/rat/:id/generate-dok  → Generate dokumen
 GET    /api/rat/:id/export        → Export PDF
 ```
 
@@ -413,10 +421,27 @@ GET    /api/penjualan             → Riwayat penjualan
 
 ### Dashboard
 ```
-GET    /api/dashboard/ringkasan   → Total anggota, simpanan, pinjaman, SHU
-GET    /api/dashboard/grafik      → Data grafik
-GET    /api/dashboard/kesehatan   → Indikator kesehatan koperasi
-GET    /api/dashboard/aktivitas   → Aktivitas terkini
+GET    /api/dashboard/ringkasan              → Total anggota, simpanan, pinjaman, SHU
+GET    /api/dashboard/grafik                 → Data grafik
+GET    /api/dashboard/kesehatan              → Indikator kesehatan koperasi
+GET    /api/dashboard/aktivitas              → Aktivitas terkini
+```
+
+### User Management
+```
+GET    /api/users                 → List user
+POST   /api/users                 → Buat user
+PATCH  /api/users/:id             → Update user
+PATCH  /api/users/:id/deactivate  → Nonaktifkan user
+PATCH  /api/users/:id/activate    → Aktifkan user
+PATCH  /api/auth/password         → Ganti password sendiri
+```
+
+### SHU Export
+```
+GET    /api/shu/export/xlsx       → Export rekap SHU (XLSX)
+GET    /api/shu/:id/export/xlsx   → Export detail SHU (XLSX)
+GET    /api/shu/:id/export/pdf    → Export detail SHU (PDF)
 ```
 
 ---
@@ -436,6 +461,8 @@ GET    /api/dashboard/aktivitas   → Aktivitas terkini
 /laporan                    → Laporan keuangan (buku besar, neraca saldo, laba rugi, neraca, arus kas)
 /audit                      → Audit log aktivitas
 /shu                        → SHU (Sisa Hasil Usaha)
+/rat                        → RAT (Rapat Anggota Tahunan)
+/users                      → Manajemen pengguna (admin only)
 ```
 
 ---
@@ -503,7 +530,13 @@ GET    /api/dashboard/aktivitas   → Aktivitas terkini
 | Audit log | ✅ Done | Semua modul |
 | Dashboard ringkasan + kesehatan koperasi | ✅ Done | Semua modul |
 | SHU (hitung otomatis + alokasi + JMA/JUA per anggota) | ✅ Done | Jurnal, Anggota, Simpanan |
-| **Total MVP + SHU** | **✅ COMPLETE** | |
+| **Phase 1 MVP** | **✅ COMPLETE** | |
+| **Phase 2:** | | |
+| └ SHU Export (PDF/XLSX) | ✅ Done | SHU |
+| └ RAT (full state machine) | ✅ Done | Anggota |
+| └ User Management (CRUD) | ✅ Done | Auth |
+| └ Ganti Password | ✅ Done | Auth |
+| **Phase 2 COMPLETE** | **✅ DONE** | |
 
 ---
 
@@ -520,8 +553,10 @@ api/src/
 │   ├── jurnal.route.ts         # Jurnal, buku kas, buku besar, neraca saldo, laba rugi, neraca
 │   ├── tagihan.route.ts        # Tagihan simpanan wajib
 │   ├── audit.route.ts          # Audit log
-│   ├── shu.route.ts            # SHU calculation & distribution
-│   └── dashboard.route.ts
+│   ├── shu.route.ts            # SHU calculation & distribution + export
+│   ├── dashboard.route.ts
+│   ├── rat.route.ts            # RAT full state machine
+│   └── user.route.ts           # User management
 ├── controllers/
 │   ├── auth.controller.ts
 │   ├── anggota.controller.ts
@@ -531,7 +566,9 @@ api/src/
 │   ├── tagihan.controller.ts
 │   ├── audit.controller.ts
 │   ├── shu.controller.ts
-│   └── dashboard.controller.ts
+│   ├── dashboard.controller.ts
+│   ├── rat.controller.ts
+│   └── user.controller.ts
 ├── services/
 │   ├── anggota.service.ts
 │   ├── simpanan.service.ts
@@ -539,8 +576,11 @@ api/src/
 │   ├── jurnal.service.ts       # Jurnal otomatis + laporan keuangan
 │   ├── tagihan.service.ts      # Auto-generate tagihan wajib
 │   ├── audit.service.ts        # Audit trail logging
-│   ├── shu.service.ts            # Hitung SHU, JMA/JUA, state machine
-│   └── dashboard.service.ts
+│   ├── shu.service.ts          # Hitung SHU, JMA/JUA, state machine
+│   ├── dashboard.service.ts
+│   ├── rat.service.ts          # RAT state machine, voting, kehadiran
+│   ├── user.service.ts         # User CRUD
+│   └── export.service.ts       # SHU export XLSX/PDF
 ├── middleware/
 │   ├── auth.ts                 # JWT verify
 │   ├── audit.ts                # Audit middleware (after action)
@@ -560,6 +600,8 @@ admin/src/pages/
 ├── BukuKas.tsx
 ├── Tagihan.tsx                 # Tagihan simpanan wajib
 ├── Laporan.tsx                 # Buku besar, neraca saldo, laba rugi, neraca
-├── SHU.tsx                     # SHU hitung & kelola pembagian
+├── SHU.tsx                     # SHU hitung & kelola pembagian + export
+├── RAT.tsx                     # RAT full management
+├── Users.tsx                   # Manajemen pengguna (admin)
 └── AuditLog.tsx                # Riwayat aktivitas
 ```

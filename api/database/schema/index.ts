@@ -168,3 +168,45 @@ export const shuAnggota = sqliteTable("shu_anggota", {
   status: text("status", { enum: ["belum_dibagikan", "dibagikan"] }).notNull().default("belum_dibagikan"),
   createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
 });
+
+export const rat = sqliteTable("rat", {
+  id: text("id").primaryKey(),
+  periode: text("periode").notNull(), // YYYY
+  status: text("status", { enum: ["draft", "dipublikasi", "voting", "disahkan", "diperpanjang"] }).notNull().default("draft"),
+  tanggalRAT: text("tanggal_rat").notNull(),
+  tempat: text("tempat").notNull(),
+  totalAnggota: integer("total_anggota").notNull().default(0),
+  totalHadir: integer("total_hadir").notNull().default(0),
+  kuorum: integer("kuorum", { mode: "boolean" }).notNull().default(false),
+  catatan: text("catatan"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`).$onUpdate(() => sql`(datetime('now'))`).notNull(),
+});
+
+export const ratAgenda = sqliteTable("rat_agenda", {
+  id: text("id").primaryKey(),
+  ratId: text("rat_id").notNull().references(() => rat.id),
+  judul: text("judul").notNull(),
+  hasilVoting: text("hasil_voting", { enum: ["setuju", "ditolak", "ditunda"] }),
+  catatan: text("catatan"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+});
+
+export const ratDokumen = sqliteTable("rat_dokumen", {
+  id: text("id").primaryKey(),
+  ratId: text("rat_id").notNull().references(() => rat.id),
+  nama: text("nama").notNull(),
+  tipe: text("tipe", { enum: ["lpj_pengurus", "laporan_keuangan", "laporan_pengawas", "shu", "rencana_kerja", "rapb", "notulensi", "lain"] }).notNull(),
+  status: text("status", { enum: ["disiapkan", "final"] }).notNull().default("disiapkan"),
+  url: text("url"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+});
+
+export const ratKehadiran = sqliteTable("rat_kehadiran", {
+  id: text("id").primaryKey(),
+  ratId: text("rat_id").notNull().references(() => rat.id),
+  anggotaId: text("anggota_id").notNull().references(() => anggota.id),
+  hadir: integer("hadir", { mode: "boolean" }).notNull().default(false),
+  suratKuasa: integer("surat_kuasa", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+});

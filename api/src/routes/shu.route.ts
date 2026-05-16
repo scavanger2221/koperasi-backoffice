@@ -11,4 +11,9 @@ export const shuRoute = new Hono()
   .patch("/:id/konfirmasi", requireRole(["super_admin", "admin", "pengurus"]), auditMiddleware("KONFIRMASI_SHU", "shu"), shuController.konfirmasi)
   .patch("/:id/sahkan", requireRole(["super_admin", "admin", "pengurus"]), auditMiddleware("SAHKAN_SHU", "shu"), shuController.sahkan)
   .patch("/:id/bagikan", requireRole(["super_admin", "admin", "bendahara"]), auditMiddleware("BAGIKAN_SHU", "shu"), shuController.bagikan)
-  .delete("/:id", requireRole(["super_admin", "admin"]), auditMiddleware("HAPUS_SHU", "shu"), shuController.hapus);
+  .delete("/:id", requireRole(["super_admin", "admin"]), auditMiddleware("HAPUS_SHU", "shu"), shuController.hapus)
+
+  // Export
+  .get("/export/xlsx", requireRole(["super_admin", "admin", "pengurus", "bendahara"]), shuController.exportRekapXLSX)
+  .get("/:id/export/xlsx", requireRole(["super_admin", "admin", "pengurus", "bendahara"]), shuController.exportDetailXLSX)
+  .get("/:id/export/pdf", requireRole(["super_admin", "admin", "pengurus", "bendahara"]), shuController.exportDetailPDF);

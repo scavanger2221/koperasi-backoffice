@@ -11,6 +11,7 @@ import {
   Calculator,
   Check,
   Users,
+  FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FormField } from "@/components/ui/form-field";
-import { api } from "@/lib/api";
+import { api, downloadBlob } from "@/lib/api";
 import { formatRupiah } from "@/lib/utils";
 import { rules, validate, type FieldErrors } from "@/lib/validation";
 import { useToast } from "@/hooks/useToast";
@@ -211,6 +212,15 @@ export default function SHUPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 self-start">
+          {/* Export Rekap XLSX */}
+          <Button
+            variant="outline"
+            className="h-9"
+            onClick={() => downloadBlob("/api/shu/export/xlsx", "rekap-shu.xlsx")}
+          >
+            <FileDown className="w-4 h-4 mr-1" />
+            Export XLSX
+          </Button>
           <Dialog open={hitungOpen} onOpenChange={(v) => {
             setHitungOpen(v);
             if (!v) setHitungErrors({});
@@ -777,6 +787,25 @@ export default function SHUPage() {
 
               {/* Actions */}
               <div className="flex gap-2 pt-2 border-t border-border">
+                {/* Export buttons — always visible */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/30"
+                  onClick={() => downloadBlob(`/api/shu/${selected!.id}/export/xlsx`, `shu-${selected!.periode}.xlsx`)}
+                >
+                  <FileDown className="w-3 h-3 mr-1" />
+                  XLSX
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
+                  onClick={() => downloadBlob(`/api/shu/${selected!.id}/export/pdf`, `shu-${selected!.periode}.pdf`)}
+                >
+                  <FileDown className="w-3 h-3 mr-1" />
+                  PDF
+                </Button>
                 {detailQuery.data.status === "draft" && (
                   <>
                     <Button

@@ -112,6 +112,18 @@ export class AuthService {
     return `AG${String(count + 1).padStart(5, "0")}`;
   }
 
+  async changePassword(userId: string, passwordLama: string, passwordBaru: string) {
+    const user = await db.select().from(users).where(eq(users.id, userId)).get();
+    if (!user) throw new HTTPException(404, { message: "User tidak ditemukan" });
+
+    const valid = await bcrypt.compare(passwordLama, user.password);
+    if (!valid) throw new HTTPException(400, { message: "Password lama salah" });
+
+    const hashed = await bcrypt.hash(passwordBaru, 10);
+    await db.update(users).set({ password: hashed }).where(eq(users.id, userId));
+    return { ok: true };
+  }
+
   async me(userId: string) {
     const user = await db.select().from(users).where(eq(users.id, userId)).get();
     if (!user) {
