@@ -7,9 +7,9 @@ export const ratRoute = new Hono()
   .use(authMiddleware)
   // List & detail
   .get("/", requireRole(["super_admin", "admin", "pengurus", "bendahara", "pengawas"]), ratController.list)
-  .get("/:id", requireRole(["super_admin", "admin", "pengurus", "bendahara", "pengawas"]), ratController.getById)
-  // Anggota aktif (for kehadiran form)
+  // Anggota aktif (for kehadiran form) — must be BEFORE /:id
   .get("/anggota-aktif", requireRole(["super_admin", "admin", "pengurus"]), ratController.getAnggotaAktif)
+  .get("/:id", requireRole(["super_admin", "admin", "pengurus", "bendahara", "pengawas"]), ratController.getById)
   // CRUD
   .post("/", requireRole(["super_admin", "admin", "pengurus"]), auditMiddleware("BUAT_RAT", "rat"), ratController.buat)
   .patch("/:id", requireRole(["super_admin", "admin", "pengurus"]), auditMiddleware("UPDATE_RAT", "rat"), ratController.update)

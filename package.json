@@ -9,7 +9,10 @@
     "lint": "turbo lint",
     "db:generate": "cd api && npx drizzle-kit generate",
     "db:migrate": "cd api && npx drizzle-kit migrate",
-    "db:seed": "cd api && npx tsx src/lib/seed.ts"
+    "db:seed": "cd api && npx tsx src/seeders/runner.ts",
+    "db:seed:list": "cd api && npx tsx src/seeders/runner.ts --list",
+    "test": "cd api && npx vitest run",
+    "test:watch": "cd api && npx vitest"
   },
   "devDependencies": {
     "turbo": "^2.5.3"

@@ -509,10 +509,12 @@ GET    /api/shu/:id/export/pdf    → Export detail SHU (PDF)
 
 ### 6. SQLite — simple aja
 - **Zero setup** — ga perlu postgres, ga perlu docker, `bun run` udah jalan.
-- **1 file di `data/koperasi.db`** — backup tinggal copy.
+- **1 file di `api/database/koperasi.db`** — backup tinggal copy.
 - **Lu ga peduli** soal concurrent write & scalability — bomat yang penting jalan.
 - Drizzle + better-sqlite3 = full TypeSafety, migration auto.
-- Buat multi-tenant? Tinggal bikin file `data/{tenant_id}.db` — gampang.
+- Buat multi-tenant? Tinggal bikin file `database/{tenant_id}.db` — gampang.
+- **DB path** cuma ditulis di SATU tempat: `api/src/lib/db.ts` (`./database/koperasi.db`).
+- Semua seeder pake path yang SAMA. Jangan hardcode di file lain.
 
 ---
 
@@ -585,10 +587,20 @@ api/src/
 │   ├── auth.ts                 # JWT verify
 │   ├── audit.ts                # Audit middleware (after action)
 │   └── error.ts                # Global error handler
+├── seeders/                   # Per-table seeders, run with `npm run db:seed`
+│   ├── runner.ts               # Runner: all or selective (`--list`, `--skip`, `npm run db:seed users akun`)
+│   ├── seed-users.ts
+│   ├── seed-anggota.ts
+│   ├── seed-akun.ts
+│   ├── seed-simpanan.ts
+│   ├── seed-pinjaman.ts
+│   ├── seed-tagihan.ts
+│   ├── seed-jurnal.ts
+│   ├── seed-shu.ts
+│   └── seed-rat.ts
 ├── lib/
 │   ├── config.ts               # Env config
-│   ├── db.ts                   # Drizzle client
-│   └── seed-coa.ts             # Seed chart of accounts (COA)
+│   └── db.ts                   # Drizzle client (single source of DB path)
 └── package.json
 
 admin/src/pages/

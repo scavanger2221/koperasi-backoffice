@@ -5,7 +5,6 @@ dotenv.config({ path: resolve(process.cwd(), "../.env") });
 
 export const config = {
   port: Number(process.env.PORT) || 3001,
-  databaseUrl: process.env.DATABASE_URL || "./data/koperasi.db",
   jwtSecret: process.env.JWT_SECRET || "koperasi-dev-secret-change-in-production",
   nodeEnv: process.env.NODE_ENV || "development",
 };

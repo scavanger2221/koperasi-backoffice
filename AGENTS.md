@@ -101,6 +101,45 @@ const cfg = { draft:"bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-
 
 ---
 
+## 🗄️ DB PATH (SINGLE SOURCE OF TRUTH)
+
+Database file: **`api/database/koperasi.db`**
+
+| File | Path used |
+|------|----------|
+| `api/src/lib/db.ts` | `./database/koperasi.db` (relative to `api/` cwd) |
+| `api/drizzle.config.ts` | `./database/koperasi.db` |
+| `api/src/seeders/runner.ts` | `./database/koperasi.db` |
+
+**Never hardcode the DB path** in any new file. If you need to open the database, use the same path as `db.ts`.
+
+---
+
+## 🌱 SEEDERS
+
+Per-table seeders in `api/src/seeders/`:
+
+```bash
+npm run db:seed               # Run all seeders
+npm run db:seed -- users      # Run specific seeder(s)
+npm run db:seed --list        # List available seeders
+npm run db:seed -- --skip jurnal  # Skip one
+```
+
+Each seeder exports:
+```typescript
+export async function seed(db: BetterSQLite3Database<typeof schema>) {
+  // Idempotent: skip if data exists
+  const existing = db.select().from(schema.table).limit(1).all();
+  if (existing.length > 0) { console.log("...skip"); return; }
+  // ... insert
+}
+```
+
+Dependency order is defined in `runner.ts`. When adding a new table, create its seeder in `api/src/seeders/` and register it in `runner.ts`.
+
+---
+
 ## 🗄️ DB SCHEMA
 
 ```typescript
@@ -118,6 +157,72 @@ Generate migration: `cd api && npx drizzle-kit generate`
 
 ---
 
+## 🧪 TESTING
+
+**Framework:** Vitest v4 (same Vite ecosystem as admin).
+
+**Architecture:** No mocking needed. `db.ts` reads `TEST_DATABASE_URL` env var. Each test file runs in an isolated forked process with its own temp SQLite database.
+
+**No server required:** Tests import `app` from `api/src/app.ts` and use Hono's `app.request()` to hit routes directly.
+
+### Test files
+
+```
+api/src/__tests__/
+├── setup.ts          # Shared helpers: initTestDb, seedAdmin, seedAkun, getAdminToken
+├── health.test.ts    # 1 test
+├── auth.test.ts      # 7 tests  (login, validation, auth protection)
+├── anggota.test.ts   # 8 tests  (CRUD, status changes)
+├── simpanan.test.ts  # 16 tests (CRUD, saldo, filters, jurnal, RBAC)
+├── pinjaman.test.ts  # 25 tests (full state machine, denda, kolektibilitas)
+├── tagihan.test.ts   # 13 tests (generate, bayar, tunggakan, summary, RBAC)
+├── jurnal.test.ts    # 14 tests (list, buku kas/besar, neraca, laba rugi, arus kas)
+├── dashboard.test.ts # 6 tests  (ringkasan, charts, aktivitas, RBAC)
+├── shu.test.ts       # 19 tests (hitung, state machine, export, RBAC)
+├── rat.test.ts       # 27 tests (full state machine, agenda, voting, kehadiran)
+├── users.test.ts     # 26 tests (CRUD, password, register, audit, RBAC)
+└── rbac.test.ts      # 74 tests (every endpoint × all 6 roles)
+```
+
+**Total: 236 tests** | Run: `npm test` or `npm run test:watch`
+
+### Writing tests
+
+```typescript
+import { app } from "../app.js";
+import { initTestDb, seedAdmin, getAdminToken } from "./setup.js";
+
+let token: string;
+
+beforeAll(async () => {
+  const { sqlite, testDb } = initTestDb();  // Temp DB + migrate
+  seedAkun(testDb);
+  await seedAdmin(testDb);
+  sqlite.close();
+  token = await getAdminToken(app);
+});
+
+it("does something", async () => {
+  const res = await app.request("/api/endpoint", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ key: "value" }),
+  });
+  expect(res.status).toBe(200);
+});
+```
+
+### Anti-patterns
+
+| ❌ Don't | ✅ Do |
+|----------|-------|
+| Mock the database module | Let `db.ts` read `TEST_DATABASE_URL` env var |
+| Start a server for tests | Use `app.request()` (no port needed) |
+| Share test DB across files | Each file gets its own temp DB (fork isolation) |
+| Clean up DB in each file | Global cleanup on worker exit |
+
+---
+
 ## 🚫 ANTI-PATTERNS
 
 | ❌ Don't | ✅ Do |
@@ -130,12 +235,15 @@ Generate migration: `cd api && npx drizzle-kit generate`
 | `console.log` | Logger |
 | Raw SQL | Drizzle query builder |
 | PUT | PATCH for partial |
+| Hardcode DB path in multiple files | Single source: `db.ts` → `./database/koperasi.db` |
+| Monolithic seed file | Per-table seeders in `api/src/seeders/` |
 
 ---
 
 ## ✅ PRE-COMMIT
 
 - [ ] Build passes (`npm run build`)
+- [ ] Tests pass (`npm test`)
 - [ ] No console.log, no hardcoded values
 - [ ] Zod validation on every POST/PATCH
 - [ ] Response format `{ success, data/error }`

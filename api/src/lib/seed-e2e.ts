@@ -12,7 +12,7 @@
 import Database from "better-sqlite3";
 import crypto from "crypto";
 
-const DB_PATH = "./data/koperasi.db";
+const DB_PATH = "./database/koperasi.db";
 
 // ─── Clean ───────────────────────────────────────────────────────────────────
 
