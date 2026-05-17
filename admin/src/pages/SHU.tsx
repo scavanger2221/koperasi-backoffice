@@ -344,7 +344,7 @@ export default function SHUPage() {
       )}
 
       {/* Table */}
-      <Card className="border border-border shadow-sm">
+      <Card className="border border-border shadow-sm" noHover>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <PiggyBank className="w-4 h-4 text-muted-foreground" />
@@ -391,7 +391,7 @@ export default function SHUPage() {
                       return (
                         <tr
                           key={s.id}
-                          className="border-b border-border/50 hover:bg-muted/60 transition-colors"
+                          className={`border-b border-border/50 hover:bg-muted/60 transition-colors row-status row-status-${s.status}`}
                         >
                           <td className="py-3 px-3 font-semibold text-foreground">
                             {s.periode}

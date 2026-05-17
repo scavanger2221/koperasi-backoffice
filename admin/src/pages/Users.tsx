@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users as UsersIcon, Plus, Loader2, Pencil, ToggleLeft, ToggleRight } from "lucide-react";
+import { Users as UsersIcon, Plus, Loader2, Pencil, UserCheck, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -210,7 +210,7 @@ export default function UsersPage() {
       </div>
 
       {/* Table */}
-      <Card className="border border-border shadow-sm">
+      <Card className="border border-border shadow-sm" noHover>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <UsersIcon className="w-4 h-4 text-muted-foreground" />
@@ -274,11 +274,11 @@ export default function UsersPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className={`w-8 h-8 ${user.aktif ? "text-amber-600 hover:text-amber-700" : "text-emerald-600 hover:text-emerald-700"}`}
+                                  className={`w-8 h-8 ${user.aktif ? "text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" : "text-gray-500 dark:text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"}`}
                                   onClick={() => toggleMutation.mutate({ id: user.id, aktif: !user.aktif })}
                                   title={user.aktif ? "Nonaktifkan" : "Aktifkan"}
                                 >
-                                  {user.aktif ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                                  {user.aktif ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
                                 </Button>
                               )}
                             </div>
@@ -330,7 +330,7 @@ export default function UsersPage() {
                               className="w-8 h-8"
                               onClick={() => toggleMutation.mutate({ id: user.id, aktif: !user.aktif })}
                             >
-                              {user.aktif ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                              {user.aktif ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
                             </Button>
                           )}
                         </div>

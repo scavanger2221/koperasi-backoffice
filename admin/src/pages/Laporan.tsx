@@ -300,7 +300,7 @@ export default function LaporanPage() {
         </TabsContent>
 
         <TabsContent value="laba-rugi" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-border shadow-sm" noHover>
             <CardHeader>
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>
@@ -444,7 +444,7 @@ export default function LaporanPage() {
         </TabsContent>
 
         <TabsContent value="arus-kas" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-border shadow-sm" noHover>
             <CardHeader>
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>

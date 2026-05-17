@@ -233,7 +233,7 @@ export default function SimpananPage() {
         })}
       </div>
 
-      <Card className="border border-border shadow-sm">
+      <Card className="border border-border shadow-sm" noHover>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

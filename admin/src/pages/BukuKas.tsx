@@ -84,7 +84,7 @@ export default function BukuKasPage() {
 
       {/* Stats — Dashboard-style cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border border-border shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-border shadow-sm hover:shadow-md transition-shadow" noHover>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Kas Masuk
@@ -98,7 +98,7 @@ export default function BukuKasPage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-border shadow-sm hover:shadow-md transition-shadow" noHover>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Kas Keluar
@@ -112,7 +112,7 @@ export default function BukuKasPage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-border shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-border shadow-sm hover:shadow-md transition-shadow" noHover>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Saldo Akhir
@@ -145,23 +145,21 @@ export default function BukuKasPage() {
       </div>
 
       {/* Table */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-3">
+      <Card className="border border-border shadow-sm" noHover>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-muted-foreground" />
-            <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-foreground">Daftar Transaksi Kas</span>
-            {items.length > 0 && (
-              <button
-                onClick={exportCSV}
-                className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-medium"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Export CSV
-              </button>
-            )}
           </div>
-          </div>
+          {items.length > 0 && (
+            <button
+              onClick={exportCSV}
+              className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export CSV
+            </button>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (

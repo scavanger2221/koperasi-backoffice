@@ -61,7 +61,7 @@ export default function AuditLogPage() {
         <p className="text-muted-foreground text-sm mt-1">Jejak aktivitas pengguna sistem</p>
       </div>
 
-      <Card className="border border-border shadow-sm">
+      <Card className="border border-border shadow-sm" noHover>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-muted-foreground" />

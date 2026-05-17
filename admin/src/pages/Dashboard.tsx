@@ -297,7 +297,7 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Activity */}
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-border shadow-sm" noHover>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-semibold text-foreground">Aktivitas Terkini</CardTitle>

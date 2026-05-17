@@ -547,7 +547,7 @@ export default function Anggota() {
         </Card>
       </div>
 
-      <Card className="border border-border shadow-sm">
+      <Card className="border border-border shadow-sm" noHover>
         <CardHeader className="pb-3">
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -580,7 +580,7 @@ export default function Anggota() {
                   </thead>
                   <tbody>
                     {data?.data?.map((a) => (
-                      <tr key={a.id} className="border-b border-gray-200/80 dark:border-gray-700/50 hover:bg-muted/60 transition-colors">
+                      <tr key={a.id} className={`border-b border-border/50 hover:bg-muted/60 transition-colors row-status row-status-${a.status}`}>
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold shrink-0">

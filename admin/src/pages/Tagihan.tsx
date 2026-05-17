@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -232,17 +232,17 @@ export default function TagihanPage() {
         </div>
       )}
 
-      <Card className="border border-border shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <div className="flex items-center gap-2">
-            <Receipt className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-semibold text-foreground">Daftar Tagihan</span>
-          </div>
-          <div className="flex gap-2">
-            <Input type="month" value={periodeFilter} onChange={(e) => setPeriodeFilter(e.target.value)} className="w-[160px]" />
-            <Button variant="outline" onClick={handleCekTunggakan} size="sm">Cek Tunggakan</Button>
-          </div>
+      <Card className="border border-border shadow-sm" noHover>
+        <CardHeader>
+          <CardTitle className="text-base">Filter Periode</CardTitle>
         </CardHeader>
+        <CardContent className="flex flex-wrap gap-4">
+          <Input type="month" value={periodeFilter} onChange={(e) => setPeriodeFilter(e.target.value)} className="w-[180px]" />
+          <Button variant="outline" onClick={handleCekTunggakan}>
+            <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+            Cek Tunggakan
+          </Button>
+        </CardContent>
         <CardContent>
           {loading && <div className="py-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>}
           {!loading && (
@@ -260,7 +260,7 @@ export default function TagihanPage() {
                 </thead>
                 <tbody>
                   {tagihan.map((t) => (
-                    <tr key={t.id} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
+                    <tr key={t.id} className={`border-b border-border/50 hover:bg-muted/60 transition-colors row-status row-status-${t.status}`}>
                       <td className="py-3 px-3 font-mono text-xs">{t.anggota?.noAnggota}</td>
                       <td className="py-3 px-3">{t.anggota?.nama}</td>
                       <td className="py-3 px-3">{t.periode}</td>

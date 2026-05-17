@@ -406,7 +406,7 @@ export default function PinjamanPage() {
         </TabsList>
       </Tabs>
 
-      <Card className="border border-border shadow-sm">
+      <Card className="border border-border shadow-sm" noHover>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <HandCoins className="w-4 h-4 text-muted-foreground" />
@@ -437,7 +437,7 @@ export default function PinjamanPage() {
                     {data?.data?.map((p) => {
                       const s = statusConfig[p.status] || statusConfig.diajukan;
                       return (
-                        <tr key={p.id} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
+                        <tr key={p.id} className={`border-b border-border/50 hover:bg-muted/60 transition-colors row-status row-status-${p.status}`}>
                           <td className="py-3 px-3 font-semibold text-foreground">{p.noPinjaman}</td>
                           <td className="py-3 px-3">
                             <p className="font-medium text-foreground">{p.anggota?.nama || "-"}</p>
