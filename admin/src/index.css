@@ -19,8 +19,8 @@
   --color-accent-foreground: oklch(0.145 0 0);
   --color-destructive: oklch(0.577 0.245 27.325);
   --color-destructive-foreground: oklch(0.985 0 0);
-  --color-border: oklch(0.922 0 0);
-  --color-input: oklch(0.922 0 0);
+  --color-border: oklch(0.87 0 0);
+  --color-input: oklch(0.82 0 0);
   --color-ring: oklch(0.55 0.15 145);
   --color-chart-1: oklch(0.55 0.15 145);
   --color-chart-2: oklch(0.6 0.15 200);
@@ -137,4 +137,17 @@ html.dark {
   --color-border: oklch(1 0 0 / 10%);
   --color-input: oklch(1 0 0 / 15%);
   --color-ring: oklch(0.6 0.15 145);
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out;
 }

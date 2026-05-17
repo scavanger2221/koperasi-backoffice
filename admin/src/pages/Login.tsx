@@ -45,13 +45,13 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
-      <div className="w-full max-w-[420px] bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-8">
+      <div className="w-full max-w-[420px] bg-white dark:bg-gray-900 rounded-2xl border border-border shadow-sm p-8">
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center mb-4">
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Koperasi Backoffice</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Masuk ke dashboard admin</p>
+          <p className="text-sm text-muted-foreground mt-1">Masuk ke dashboard admin</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
@@ -77,7 +77,7 @@ export default function Login() {
               className={`w-full h-10 px-3 rounded-lg border bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors ${
                 errors.email
                   ? "border-red-400 dark:border-red-500"
-                  : "border-gray-200 dark:border-gray-700 focus:border-emerald-500"
+                  : "border-input focus:border-emerald-500"
               }`}
             />
             {errors.email && (
@@ -103,7 +103,7 @@ export default function Login() {
               className={`w-full h-10 px-3 rounded-lg border bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors ${
                 errors.password
                   ? "border-red-400 dark:border-red-500"
-                  : "border-gray-200 dark:border-gray-700 focus:border-emerald-500"
+                  : "border-input focus:border-emerald-500"
               }`}
             />
             {errors.password && (
@@ -117,7 +117,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-10 bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center"
+            className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Masuk"}
           </button>

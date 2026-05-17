@@ -216,7 +216,7 @@ export default function PinjamanPage() {
             if (!v) setErrors({});
           }}>
             <DialogTrigger asChild>
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white h-9">
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm h-9">
                 <Plus className="w-4 h-4 mr-1" />
                 <span className="hidden sm:inline">Tambah Pinjaman</span>
                 <span className="sm:hidden">Tambah</span>

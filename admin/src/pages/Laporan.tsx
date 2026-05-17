@@ -213,7 +213,7 @@ export default function LaporanPage() {
           </Card>
 
           {bukuBesar && (
-            <Card className="border border-border shadow-sm">
+            <Card className="border border-border shadow-sm" noHover>
               <CardHeader>
                 <CardTitle className="text-base">
                   {bukuBesar.akun?.kode} - {bukuBesar.akun?.nama} ({bukuBesar.akun?.saldoNormal})
@@ -255,7 +255,7 @@ export default function LaporanPage() {
         </TabsContent>
 
         <TabsContent value="neraca-saldo" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-border shadow-sm" noHover>
             <CardHeader>
               <CardTitle className="text-base">Neraca Saldo</CardTitle>
             </CardHeader>
@@ -315,7 +315,7 @@ export default function LaporanPage() {
           </Card>
 
           {labaRugi && (
-            <Card className="border border-border shadow-sm">
+            <Card className="border border-border shadow-sm" noHover>
               <CardHeader>
                 <CardTitle className="text-base">Laporan Laba Rugi</CardTitle>
               </CardHeader>
@@ -367,7 +367,7 @@ export default function LaporanPage() {
 
         <TabsContent value="neraca" className="space-y-4">
           {neraca && (
-            <Card className="border border-border shadow-sm">
+            <Card className="border border-border shadow-sm" noHover>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Neraca</CardTitle>
                 <span className={`text-xs px-2 py-1 rounded-full ${neraca.balanced ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
@@ -495,7 +495,7 @@ export default function LaporanPage() {
               </Card>
 
               {/* Kas masuk / keluar net */}
-              <Card className="border border-border shadow-sm">
+              <Card className="border border-border shadow-sm" noHover>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Arus Kas Bersih</span>
@@ -524,7 +524,7 @@ export default function LaporanPage() {
 
 function renderArusKasSection(title: string, colorClass: string, items: ArusKasItem[], total: { masuk: number; keluar: number; total: number }) {
   return (
-    <Card className="border border-border shadow-sm">
+    <Card className="border border-border shadow-sm" noHover>
       <CardHeader className="pb-2">
         <CardTitle className={`text-base ${colorClass}`}>{title}</CardTitle>
       </CardHeader>

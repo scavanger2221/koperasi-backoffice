@@ -10,6 +10,7 @@ import {
   Menu,
   Bell,
   ChevronDown,
+  ChevronRight,
   Building2,
   Moon,
   Sun,
@@ -21,6 +22,8 @@ import {
   Key,
   Lock,
   Loader2,
+  MoreHorizontal,
+  X,
 } from "lucide-react";
 import { CommandPalette } from "./CommandPalette";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,23 +37,41 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { FormField } from "@/components/ui/form-field";
 import { rules, validate, type FieldErrors } from "@/lib/validation";
 
-const navItems = [
+const navGroups: { label: string | null; items: { label: string; icon: React.ElementType; path: string }[] }[] = [
+  { label: null, items: [{ label: "Dashboard", icon: LayoutDashboard, path: "/" }] },
+  { label: "Data Master", items: [
+    { label: "Anggota", icon: Users, path: "/anggota" },
+    { label: "Simpanan", icon: Wallet, path: "/simpanan" },
+    { label: "Pinjaman", icon: HandCoins, path: "/pinjaman" },
+  ]},
+  { label: "Keuangan", items: [
+    { label: "Buku Kas", icon: BookOpen, path: "/buku-kas" },
+    { label: "Tagihan", icon: Receipt, path: "/tagihan" },
+    { label: "Laporan", icon: BarChart3, path: "/laporan" },
+  ]},
+  { label: "Akuntansi & SHU", items: [
+    { label: "SHU", icon: PiggyBank, path: "/shu" },
+    { label: "RAT", icon: Building2, path: "/rat" },
+  ]},
+  { label: "Manajemen", items: [
+    { label: "Audit Log", icon: ClipboardList, path: "/audit" },
+    { label: "Pengguna", icon: UserCog, path: "/users" },
+  ]},
+];
+
+const mobileNavItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/" },
   { label: "Anggota", icon: Users, path: "/anggota" },
   { label: "Simpanan", icon: Wallet, path: "/simpanan" },
   { label: "Pinjaman", icon: HandCoins, path: "/pinjaman" },
-  { label: "Buku Kas", icon: BookOpen, path: "/buku-kas" },
-  { label: "Tagihan", icon: Receipt, path: "/tagihan" },
-  { label: "Laporan", icon: BarChart3, path: "/laporan" },
-  { label: "Audit Log", icon: ClipboardList, path: "/audit" },
-  { label: "SHU", icon: PiggyBank, path: "/shu" },
-  { label: "RAT", icon: Building2, path: "/rat" },
-  { label: "Pengguna", icon: UserCog, path: "/users" },
+  { label: "Lainnya", icon: MoreHorizontal, path: "#more" },
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(["Data Master", "Keuangan", "Akuntansi & SHU", "Manajemen"]));
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [pwForm, setPwForm] = useState({ passwordLama: "", passwordBaru: "" });
   const [pwErrors, setPwErrors] = useState<FieldErrors>({});
@@ -161,27 +182,48 @@ export function Layout({ children }: { children: React.ReactNode }) {
             sidebarOpen ? "translate-x-0 block" : "-translate-x-full"
           )}
         >
-          <div className="p-3 space-y-0.5">
-            <div className="px-3 py-2 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Menu Utama
-            </div>
-            {navItems.map((item) => {
-              const active = location.pathname === item.path;
+          <div className="p-3 space-y-1">
+            {navGroups.map((group) => {
+              const isExpanded = expandedGroups.has(group.label ?? "");
+              const hasGroupLabel = group.label !== null;
               return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all border-l-[3px]",
-                    active
-                      ? "border-l-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/15 text-emerald-700 dark:text-emerald-400"
-                      : "border-l-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                <div key={group.label ?? "dashboard"} className="space-y-0.5">
+                  {hasGroupLabel && (
+                    <button
+                      onClick={() => {
+                        const next = new Set(expandedGroups);
+                        if (isExpanded) next.delete(group.label!);
+                        else next.add(group.label!);
+                        setExpandedGroups(next);
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                    >
+                      {group.label}
+                      <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", isExpanded && "rotate-90")} />
+                    </button>
                   )}
-                >
-                  <item.icon className={cn("w-[18px] h-[18px]", active ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")} />
-                  {item.label}
-                </Link>
+                  <div className={cn("space-y-0.5 overflow-hidden transition-all", hasGroupLabel && !isExpanded && "h-0 opacity-0 pointer-events-none")}>
+                    {group.items.map((item) => {
+                      const active = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setSidebarOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 text-sm font-medium transition-all border-l-[3px]",
+                            active
+                              ? "border-l-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/15 text-emerald-700 dark:text-emerald-400"
+                              : "border-l-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                          )}
+                        >
+                          <item.icon className={cn("w-[18px] h-[18px]", active ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")} />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -204,9 +246,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Bottom Navigation — Mobile only */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-xl border-t border-border lg:hidden safe-area-pb">
         <div className="flex items-center justify-around h-16">
-          {navItems.map((item) => {
-            const active = location.pathname === item.path;
-            return (
+          {mobileNavItems.map((item) => {
+            const isMore = item.path === "#more";
+            const active = !isMore && location.pathname === item.path;
+            return isMore ? (
+              <button
+                key="more"
+                onClick={() => setMobileMoreOpen(true)}
+                className="flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors text-muted-foreground"
+              >
+                <MoreHorizontal className="w-5 h-5" />
+                <span className="text-[10px] font-medium">Lainnya</span>
+              </button>
+            ) : (
               <Link
                 key={item.path}
                 to={item.path}
@@ -227,6 +279,51 @@ export function Layout({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </nav>
+
+      {/* Mobile More Drawer */}
+      {mobileMoreOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 lg:hidden" onClick={() => setMobileMoreOpen(false)} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-2xl shadow-2xl border border-border lg:hidden animate-slide-up max-h-[70vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-card">
+              <h3 className="font-semibold text-foreground">Menu Lainnya</h3>
+              <button onClick={() => setMobileMoreOpen(false)} className="p-1 hover:bg-muted rounded-lg transition-colors">
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="p-3 space-y-3">
+              {navGroups.filter(g => g.label !== null && g.label !== "Data Master").map((group) => (
+                <div key={group.label}>
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-3 py-1.5">
+                    {group.label}
+                  </p>
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const active = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setMobileMoreOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+                            active
+                              ? "bg-emerald-50/80 dark:bg-emerald-950/15 text-emerald-700 dark:text-emerald-400"
+                              : "text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          <item.icon className={cn("w-[18px] h-[18px]", active ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")} />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Ganti Password Dialog */}
       <Dialog open={passwordOpen} onOpenChange={(v) => { setPasswordOpen(v); if (!v) { setPwErrors({}); setPwForm({ passwordLama: "", passwordBaru: "" }); } }}>

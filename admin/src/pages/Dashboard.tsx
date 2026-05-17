@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { TrendingUp, Users, Wallet, HandCoins, AlertTriangle, Activity, UserPlus, CircleDollarSign, Loader2 } from "lucide-react";
+import { TrendingUp, Users, Wallet, HandCoins, AlertTriangle, Activity, BookOpen, Receipt, BarChart3, PiggyBank, Building2, ClipboardList, UserCog, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { formatRupiah } from "@/lib/utils";
@@ -39,9 +39,13 @@ interface AktivitasData {
 }
 
 const quickActions = [
-  { label: "Anggota", icon: UserPlus, path: "/anggota", color: "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" },
-  { label: "Simpanan", icon: CircleDollarSign, path: "/simpanan", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" },
-  { label: "Pinjaman", icon: HandCoins, path: "/pinjaman", color: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
+  { label: "Buku Kas", icon: BookOpen, path: "/buku-kas", color: "bg-sky-100 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400" },
+  { label: "Tagihan", icon: Receipt, path: "/tagihan", color: "bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400" },
+  { label: "Laporan", icon: BarChart3, path: "/laporan", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400" },
+  { label: "SHU", icon: PiggyBank, path: "/shu", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" },
+  { label: "RAT", icon: Building2, path: "/rat", color: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
+  { label: "Audit Log", icon: ClipboardList, path: "/audit", color: "bg-violet-100 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400" },
+  { label: "Pengguna", icon: UserCog, path: "/users", color: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" },
 ];
 
 export default function Dashboard() {
@@ -148,40 +152,45 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ringkasan koperasi per hari ini</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Ringkasan koperasi per hari ini</p>
         </div>
       </div>
 
-      {/* Quick Actions — Mobile only */}
-      <div className="lg:hidden">
-        <div className="grid grid-cols-3 gap-3">
-          {quickActions.map((a) => (
-            <Link
-              key={a.path}
-              to={a.path}
-              className="flex flex-col items-center gap-2 p-3 rounded-xl bg-card border border-gray-200 dark:border-gray-700 shadow-sm active:scale-95 transition-transform"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${a.color}`}>
-                <a.icon className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-medium text-foreground">{a.label}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
+      {/* Quick Actions — Links to secondary pages */}
+      <Card className="border border-border shadow-sm" noHover>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold text-foreground">Menu Cepat</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+            {quickActions.map((a) => (
+              <Link
+                key={a.path}
+                to={a.path}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card border border-border/60 hover:border-border hover:shadow-sm active:scale-95 transition-all"
+              >
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${a.color}`}>
+                  <a.icon className="w-[18px] h-[18px]" />
+                </div>
+                <span className="text-[10px] font-medium text-foreground text-center leading-tight">{a.label}</span>
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-500 dark:text-gray-400" />
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <>
           {/* Stats Grid */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {stats.map((s) => (
-              <Card key={s.label} className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+              <Card key={s.label} className="border border-border shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     {s.label}
                   </CardTitle>
                   <div className={`w-10 h-10 rounded-full ${s.iconBg} flex items-center justify-center`}>
@@ -191,7 +200,7 @@ export default function Dashboard() {
                 <CardContent>
                   <div className="text-2xl font-bold text-foreground">{s.value}</div>
                   {s.sub && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                       <Activity className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       {s.sub}
                     </div>
@@ -204,18 +213,18 @@ export default function Dashboard() {
           {/* Main Content Grid */}
           <div className="grid gap-5 lg:grid-cols-3">
             {/* Chart Area */}
-            <Card className="lg:col-span-2 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <Card className="lg:col-span-2 border border-border shadow-sm">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base font-semibold text-foreground">Pertumbuhan Simpanan</CardTitle>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Total simpanan per bulan (dalam jutaan Rupiah)</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Total simpanan per bulan (dalam jutaan Rupiah)</p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 {chartData.length === 0 ? (
-                  <div className="flex items-center justify-center h-56 text-sm text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center justify-center h-56 text-sm text-muted-foreground">
                     Belum ada data simpanan
                   </div>
                 ) : (
@@ -229,7 +238,7 @@ export default function Dashboard() {
                       {chartData.map((d) => (
                         <div key={d.label} className="flex-1 flex flex-col items-center gap-2 group">
                           <div className="relative w-full flex justify-center">
-                            <span className="absolute -top-5 text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                            <span className="absolute -top-5 text-[10px] font-medium text-muted-foreground">
                               {d.totalJuta}jt
                             </span>
                             <div
@@ -237,7 +246,7 @@ export default function Dashboard() {
                               style={{ height: `${Math.max((d.totalJuta / maxVal) * 180, 4)}px` }}
                             />
                           </div>
-                          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">{d.month}</span>
+                          <span className="text-[11px] text-muted-foreground font-medium">{d.month}</span>
                         </div>
                       ))}
                     </div>
@@ -248,7 +257,7 @@ export default function Dashboard() {
 
             {/* Side Panel - Status */}
             <div className="space-y-4">
-              <Card className="border border-gray-200 dark:border-gray-700 shadow-sm">
+              <Card className="border border-border shadow-sm">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base font-semibold text-foreground">Status Pinjaman</CardTitle>
                 </CardHeader>
@@ -270,24 +279,24 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card className="border border-gray-200 dark:border-gray-700 shadow-sm">
+              <Card className="border border-border shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
                       <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Rasio Kesehatan</p>
+                      <p className="text-xs text-muted-foreground">Rasio Kesehatan</p>
                       <p className="text-lg font-bold text-foreground">Sehat</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
                     <div>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-medium">Likuiditas</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Likuiditas</p>
                       <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{(r?.totalPinjaman ?? 0) > 0 ? `${Math.round((r!.totalSimpanan / r!.totalPinjaman) * 100)}%` : "N/A"}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase font-medium">Solvabilitas</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Solvabilitas</p>
                       <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{(r?.totalPinjaman ?? 0) > 0 ? `${Math.round(((r!.totalSimpanan + r!.totalPinjaman) / r!.totalPinjaman) * 100)}%` : "N/A"}</p>
                     </div>
                   </div>
@@ -305,25 +314,25 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               {recentActivity.length === 0 ? (
-                <div className="py-12 text-center text-gray-500 dark:text-gray-400 text-sm">
+                <div className="py-12 text-center text-muted-foreground text-sm">
                   Belum ada aktivitas
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700">
-                        <th className="text-left py-3 px-3 font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">Aktivitas</th>
-                        <th className="text-left py-3 px-3 font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">Anggota</th>
-                        <th className="text-right py-3 px-3 font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">Nominal</th>
-                        <th className="text-left py-3 px-3 font-medium text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">Status</th>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Aktivitas</th>
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Anggota</th>
+                        <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Nominal</th>
+                        <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {recentActivity.map((row, i) => (
-                        <tr key={i} className="border-b border-gray-200/80 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <tr key={i} className="border-b border-border/80 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                           <td className="py-3 px-3 font-medium text-foreground">{row.act}</td>
-                          <td className="py-3 px-3 text-gray-500 dark:text-gray-400">{row.user}</td>
+                          <td className="py-3 px-3 text-muted-foreground">{row.user}</td>
                           <td className="py-3 px-3 text-right font-medium text-foreground">{formatRupiah(row.amt)}</td>
                           <td className="py-3 px-3">
                             <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${row.statusColor}`}>

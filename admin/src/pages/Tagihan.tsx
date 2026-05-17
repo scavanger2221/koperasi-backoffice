@@ -38,7 +38,7 @@ function statusBadge(status: string) {
     tunggakan: { label: "Tunggakan", className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900" },
     belum_bayar: { label: "Belum Bayar", className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900" },
   };
-  const s = map[status] || { label: status, className: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700" };
+  const s = map[status] || { label: status, className: "bg-muted text-muted-foreground border-border" };
   return <Badge className={`${s.className} font-medium text-[11px] px-2 py-0.5`} variant="outline">{s.label}</Badge>;
 }
 

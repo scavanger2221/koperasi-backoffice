@@ -50,7 +50,7 @@ const roleConfig: Record<string, { label: string; className: string }> = {
   },
   anggota: {
     label: "Anggota",
-    className: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700",
+    className: "bg-muted text-muted-foreground border-border",
   },
 };
 
@@ -252,7 +252,7 @@ export default function UsersPage() {
                               className={`font-medium text-[11px] px-2 py-0.5 ${
                                 user.aktif
                                   ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900"
-                                  : "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+                                  : "bg-muted text-muted-foreground border-border"
                               }`}
                               variant="outline"
                             >
@@ -274,7 +274,7 @@ export default function UsersPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className={`w-8 h-8 ${user.aktif ? "text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" : "text-gray-500 dark:text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"}`}
+                                  className={`w-8 h-8 ${user.aktif ? "text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"}`}
                                   onClick={() => toggleMutation.mutate({ id: user.id, aktif: !user.aktif })}
                                   title={user.aktif ? "Nonaktifkan" : "Aktifkan"}
                                 >
@@ -315,7 +315,7 @@ export default function UsersPage() {
                       </div>
                       <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <Badge className={`font-medium text-[11px] px-2 py-0.5 ${user.aktif ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-gray-100 text-gray-800 border-gray-200"}`} variant="outline">
+                          <Badge className={`font-medium text-[11px] px-2 py-0.5 ${user.aktif ? "bg-emerald-100 text-emerald-800 border-emerald-200" : "bg-muted text-muted-foreground border-border"}`} variant="outline">
                             {user.aktif ? "Aktif" : "Nonaktif"}
                           </Badge>
                         </div>
