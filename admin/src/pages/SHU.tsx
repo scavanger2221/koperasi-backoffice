@@ -309,7 +309,7 @@ export default function SHUPage() {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm bg-card">
+          <Card className="border border-border shadow-sm bg-card">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground font-medium">Periode</p>
               <p className="text-xl font-bold text-foreground mt-1">
@@ -317,7 +317,7 @@ export default function SHUPage() {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm bg-card">
+          <Card className="border border-border shadow-sm bg-card">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground font-medium">Draft / Aktif</p>
               <p className="text-xl font-bold text-foreground mt-1">
@@ -329,7 +329,7 @@ export default function SHUPage() {
               </p>
             </CardContent>
           </Card>
-          <Card className="border-0 shadow-sm bg-card">
+          <Card className="border border-border shadow-sm bg-card">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground font-medium">Dibagikan</p>
               <p className="text-xl font-bold text-foreground mt-1">
@@ -344,7 +344,7 @@ export default function SHUPage() {
       )}
 
       {/* Table */}
-      <Card className="border-0 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <PiggyBank className="w-4 h-4 text-muted-foreground" />

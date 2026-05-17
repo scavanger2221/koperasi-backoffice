@@ -279,14 +279,17 @@ export default function Anggota() {
           if (!v) setCreateErrors({});
         }}>
           <DialogTrigger asChild>
-            <Button className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
               <Plus className="w-4 h-4 mr-1.5" />
               Tambah Anggota
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border-0 shadow-xl">
             <DialogHeader>
-              <DialogTitle className="text-lg">Tambah Anggota Baru</DialogTitle>
+              <DialogTitle className="text-lg flex items-center gap-2">
+              <Users className="w-5 h-5 text-emerald-600" />
+              Tambah Anggota Baru
+            </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4 mt-2" noValidate>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -362,9 +365,13 @@ export default function Anggota() {
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-10 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900" disabled={createMutation.isPending}>
-                {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Simpan Anggota"}
-              </Button>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => { setCreateOpen(false); setCreateErrors({}); }}>Batal</Button>
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  Simpan Anggota
+                </Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
@@ -374,7 +381,10 @@ export default function Anggota() {
       <Dialog open={printOpen} onOpenChange={setPrintOpen}>
         <DialogContent className="max-w-md border-0 shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-lg">Kartu Anggota</DialogTitle>
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <Printer className="w-5 h-5 text-emerald-600" />
+              Kartu Anggota
+            </DialogTitle>
           </DialogHeader>
           <div id="print-card" className="py-2">
             {printDetail?.data ? (
@@ -396,7 +406,10 @@ export default function Anggota() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border-0 shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-lg">Edit Anggota</DialogTitle>
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-emerald-600" />
+              Edit Anggota
+            </DialogTitle>
           </DialogHeader>
           {editForm ? (
             <form onSubmit={handleEdit} className="space-y-4 mt-2" noValidate>
@@ -481,9 +494,13 @@ export default function Anggota() {
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-10 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Simpan Perubahan"}
-              </Button>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => { setEditOpen(false); setEditingId(null); setEditErrors({}); }}>Batal</Button>
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  Simpan Perubahan
+                </Button>
+              </div>
             </form>
           ) : (
             <div className="flex justify-center py-8">
@@ -530,7 +547,7 @@ export default function Anggota() {
         </Card>
       </div>
 
-      <Card className="border border-gray-200 dark:border-gray-700 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardHeader className="pb-3">
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -583,7 +600,7 @@ export default function Anggota() {
                         <td className="py-3 px-3 text-gray-500 dark:text-gray-400">{formatDate(a.tanggalDaftar)}</td>
                         <td className="py-3 px-3 text-right">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-foreground hover:bg-muted" onClick={() => openEdit(a.id)}>
+                            <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => openEdit(a.id)}>
                               <Pencil className="w-3.5 h-3.5" />
                             </Button>
                             <Button variant="ghost" size="icon" className="w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30" onClick={() => openPrint(a.id)} title="Cetak Kartu">
@@ -616,7 +633,7 @@ export default function Anggota() {
               {/* Mobile Cards */}
               <div className="lg:hidden space-y-3">
                 {data?.data?.map((a) => (
-                  <div key={a.id} className="p-4 rounded-xl bg-card border border-gray-200 dark:border-gray-700 shadow-sm">
+                  <div key={a.id} className="p-4 rounded-xl bg-card border border-border shadow-sm">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold shrink-0">

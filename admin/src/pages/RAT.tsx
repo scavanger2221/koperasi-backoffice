@@ -461,7 +461,7 @@ export default function RATPage() {
           {list.map((item) => {
             const cfg = statusConfig[item.status] || statusConfig.draft;
             return (
-              <Card key={item.id} className="hover:shadow-md transition-shadow">
+              <Card key={item.id} className="border border-border shadow-sm hover:shadow-md transition-shadow">
                 <CardContent className="p-5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-start gap-3">

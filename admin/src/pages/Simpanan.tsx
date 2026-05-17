@@ -112,14 +112,17 @@ export default function SimpananPage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
               <Plus className="w-4 h-4 mr-1.5" />
               Catat Setoran
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md border-0 shadow-xl">
             <DialogHeader>
-              <DialogTitle className="text-lg">Catat Setoran Baru</DialogTitle>
+              <DialogTitle className="text-lg flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-emerald-600" />
+              Catat Setoran Baru
+            </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-2" noValidate>
               <FormField label="Anggota" required error={errors.anggotaId}>
@@ -203,9 +206,13 @@ export default function SimpananPage() {
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-10 bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 dark:text-gray-900" disabled={createMutation.isPending}>
-                {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Simpan Setoran"}
-              </Button>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => { setOpen(false); setErrors({}); }}>Batal</Button>
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  Simpan Setoran
+                </Button>
+              </div>
             </form>
           </DialogContent>
         </Dialog>
@@ -216,7 +223,7 @@ export default function SimpananPage() {
         {["pokok", "wajib", "sukarela", "deposito"].map((jenis) => {
           const total = data?.data?.filter(s => s.jenis === jenis).reduce((acc, s) => acc + Number(s.jumlah), 0) ?? 0;
           return (
-            <Card key={jenis} className="border-0 shadow-sm">
+            <Card key={jenis} className="border border-border shadow-sm">
               <CardContent className="p-4">
                 <p className="text-xs text-muted-foreground capitalize mb-1">Simpanan {jenis}</p>
                 <p className="text-lg font-bold text-foreground">{formatRupiah(total)}</p>
@@ -226,7 +233,7 @@ export default function SimpananPage() {
         })}
       </div>
 
-      <Card className="border-0 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

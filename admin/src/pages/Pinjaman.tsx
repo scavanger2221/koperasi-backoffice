@@ -406,7 +406,7 @@ export default function PinjamanPage() {
         </TabsList>
       </Tabs>
 
-      <Card className="border-0 shadow-sm">
+      <Card className="border border-border shadow-sm">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <HandCoins className="w-4 h-4 text-muted-foreground" />

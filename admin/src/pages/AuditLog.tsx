@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Shield, User, Database } from "lucide-react";
 
@@ -55,18 +55,18 @@ export default function AuditLogPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Audit Log</h1>
         <p className="text-muted-foreground text-sm mt-1">Jejak aktivitas pengguna sistem</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            Riwayat Aktivitas
-          </CardTitle>
+      <Card className="border border-border shadow-sm">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Riwayat Aktivitas</span>
+          </div>
         </CardHeader>
         <CardContent>
           {loading && <div className="py-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>}
@@ -74,39 +74,39 @@ export default function AuditLogPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-3 font-medium">Waktu</th>
-                    <th className="text-left py-2 px-3 font-medium">User</th>
-                    <th className="text-left py-2 px-3 font-medium">Aksi</th>
-                    <th className="text-left py-2 px-3 font-medium">Tipe</th>
-                    <th className="text-left py-2 px-3 font-medium">Detail</th>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Waktu</th>
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">User</th>
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Aksi</th>
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Tipe</th>
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Detail</th>
                   </tr>
                 </thead>
                 <tbody>
                   {logs.map((log) => (
-                    <tr key={log.id} className="border-b border-border/50 hover:bg-muted/50">
-                      <td className="py-2 px-3 text-xs text-muted-foreground whitespace-nowrap">{new Date(log.createdAt).toLocaleString("id-ID")}</td>
-                      <td className="py-2 px-3">
+                    <tr key={log.id} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
+                      <td className="py-3 px-3 text-xs text-muted-foreground whitespace-nowrap">{new Date(log.createdAt).toLocaleString("id-ID")}</td>
+                      <td className="py-3 px-3">
                         <div className="flex items-center gap-1.5">
                           <User className="w-3 h-3 text-muted-foreground" />
                           <span className="text-sm">{log.userEmail || "System"}</span>
                         </div>
                         {log.userRole && <Badge variant="outline" className="text-[10px] mt-0.5">{log.userRole}</Badge>}
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-3 px-3">
                         <Badge className={`text-[10px] ${getActionColor(log.action)}`}>{log.action}</Badge>
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-3 px-3">
                         <div className="flex items-center gap-1.5">
                           <Database className="w-3 h-3 text-muted-foreground" />
                           <span className="text-xs capitalize">{log.entityType || "-"}</span>
                         </div>
                       </td>
-                      <td className="py-2 px-3 text-xs text-muted-foreground max-w-xs truncate">{log.detail || "-"}</td>
+                      <td className="py-3 px-3 text-xs text-muted-foreground max-w-xs truncate">{log.detail || "-"}</td>
                     </tr>
                   ))}
                   {logs.length === 0 && (
-                    <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">Tidak ada log aktivitas</td></tr>
+                    <tr><td colSpan={5} className="py-12 text-center text-muted-foreground text-sm">Tidak ada log aktivitas</td></tr>
                   )}
                 </tbody>
               </table>

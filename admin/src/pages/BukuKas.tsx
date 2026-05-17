@@ -84,9 +84,9 @@ export default function BukuKasPage() {
 
       {/* Stats — Dashboard-style cards */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-border shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Kas Masuk
             </CardTitle>
             <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
@@ -98,9 +98,9 @@ export default function BukuKasPage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-border shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Kas Keluar
             </CardTitle>
             <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center">
@@ -112,9 +112,9 @@ export default function BukuKasPage() {
           </CardContent>
         </Card>
 
-        <Card className="border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border border-border shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Saldo Akhir
             </CardTitle>
             <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-950/30 flex items-center justify-center">
