@@ -21,6 +21,7 @@ import { auditRoute } from "./routes/audit.route.js";
 import { shuRoute } from "./routes/shu.route.js";
 import { ratRoute } from "./routes/rat.route.js";
 import { userRoute } from "./routes/user.route.js";
+import { searchRoute } from "./routes/search.route.js";
 
 const app = new Hono();
 
@@ -40,6 +41,7 @@ app.route("/api/audit", auditRoute);
 app.route("/api/shu", shuRoute);
 app.route("/api/rat", ratRoute);
 app.route("/api/users", userRoute);
+app.route("/api/search", searchRoute);
 
 app.onError(errorHandler);
 

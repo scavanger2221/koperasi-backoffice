@@ -25,7 +25,7 @@ import {
   MoreHorizontal,
   X,
 } from "lucide-react";
-import { CommandPalette } from "./CommandPalette";
+import { UniversalSearch } from "./UniversalSearch";
 import { useAuth } from "@/hooks/useAuth";
 import { useDarkMode } from "@/hooks/useDarkMode";
 import { cn } from "@/lib/utils";
@@ -108,8 +108,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
 
-          {/* Center: Command palette search */}
-          <CommandPalette />
+          {/* Center: Universal search */}
+          <UniversalSearch />
 
           {/* Right: Actions + User */}
           <div className="flex items-center gap-1">
