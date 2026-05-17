@@ -252,6 +252,7 @@ export default function RATPage() {
         body: JSON.stringify({ kehadiran }),
       }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rat"] });
       queryClient.invalidateQueries({ queryKey: ["rat", selectedId] });
       toast("Kehadiran disimpan", "success");
     },
