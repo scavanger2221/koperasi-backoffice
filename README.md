@@ -91,7 +91,7 @@ koperasi-backoffice/
 └── shared/              # Shared types & Zod schemas
 ```
 
-## ✅ MVP Features
+## ✅ Phase 2 Features
 
 ### Backend (API)
 - [x] JWT Authentication + RBAC

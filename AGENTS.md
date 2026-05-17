@@ -2,7 +2,7 @@
 
 > AI agent guide. Read before writing code.
 
-**Status:** Phase 1 MVP ✅ (Anggota, Simpanan, Pinjaman, Pembukuan, Tagihan, Denda, Kolektibilitas, SHU, Audit Log, Auth/RBAC, Dashboard)
+**Status:** Phase 2 ✅ — RAT (full state machine + real docs + vote tallies + clone), SHU Export, User Management, Testing (477 tests, 12/12 admin pages)
 
 ---
 
@@ -179,12 +179,12 @@ api/src/__tests__/
 ├── jurnal.test.ts    # 14 tests (list, buku kas/besar, neraca, laba rugi, arus kas)
 ├── dashboard.test.ts # 6 tests  (ringkasan, charts, aktivitas, RBAC)
 ├── shu.test.ts       # 19 tests (hitung, state machine, export, RBAC)
-├── rat.test.ts       # 27 tests (full state machine, agenda, voting, kehadiran)
+├── rat.test.ts       # 32 tests (full state machine, real docs, vote tallies, agenda CRUD, clone, kehadiran)
 ├── users.test.ts     # 26 tests (CRUD, password, register, audit, RBAC)
 └── rbac.test.ts      # 74 tests (every endpoint × all 6 roles)
 ```
 
-**Total: 236 tests** | Run: `npm test` or `npm run test:watch`
+**Total: 477 tests** | Run: `npm test` or `npm run test:watch`
 
 ### Writing tests
 

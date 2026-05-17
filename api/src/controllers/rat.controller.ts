@@ -51,6 +51,13 @@ export const ratController = {
     return c.json({ success: true, data: result });
   },
 
+  async cloneRat(c: Context) {
+    const id = c.req.param("id")!;
+    const { catatan } = await c.req.json();
+    const result = await ratService.cloneRat(id, catatan);
+    return c.json({ success: true, data: result }, 201);
+  },
+
   async hapus(c: Context) {
     const id = c.req.param("id")!;
     const result = await ratService.hapus(id);
@@ -64,10 +71,17 @@ export const ratController = {
     return c.json({ success: true, data: result }, 201);
   },
 
+  async hapusAgenda(c: Context) {
+    const id = c.req.param("id")!;
+    const agendaId = c.req.param("agendaId")!;
+    const result = await ratService.hapusAgenda(id, agendaId);
+    return c.json({ success: true, data: result });
+  },
+
   async voteAgenda(c: Context) {
     const id = c.req.param("id")!;
-    const { agendaId, hasil, catatan } = await c.req.json();
-    const result = await ratService.voteAgenda(id, agendaId, hasil, catatan);
+    const { agendaId, hasil, suaraSetuju, suaraTolak, suaraDitunda, catatan } = await c.req.json();
+    const result = await ratService.voteAgenda(id, agendaId, hasil, suaraSetuju, suaraTolak, suaraDitunda, catatan);
     return c.json({ success: true, data: result });
   },
 
@@ -82,6 +96,13 @@ export const ratController = {
     const id = c.req.param("id")!;
     const { tipe } = await c.req.json();
     const result = await ratService.generateLaporan(id, tipe);
+    return c.json({ success: true, data: result });
+  },
+
+  async getDokumen(c: Context) {
+    const id = c.req.param("id")!;
+    const dokId = c.req.param("dokId")!;
+    const result = await ratService.getDokumen(id, dokId);
     return c.json({ success: true, data: result });
   },
 

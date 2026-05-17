@@ -6,6 +6,7 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
   let token: string;
   let anggotaIds: string[] = [];
   let ratId: string;
+  let perpanjangRatId: string;
 
   beforeAll(async () => {
     const { sqlite, testDb } = initTestDb();
@@ -66,14 +67,13 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("POST /api/rat — rejects missing required fields (no Zod validator, relies on DB)", async () => {
+  it("POST /api/rat — rejects missing required fields (Zod validator)", async () => {
     const res = await app.request("/api/rat", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ periode: "2026" }),
     });
-    // No Zod validator on this route, so DB constraint throws 500
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
   });
 
   // ── UPDATE ────────────────────────────────────────────────────────────────
@@ -88,10 +88,6 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
     const body = await res.json();
     expect(body.data.tempat).toBe("Aula Baru");
     expect(body.data.catatan).toBe("Catatan diperbarui");
-  });
-
-  it("PATCH /api/rat/:id — rejects update on non-draft RAT", async () => {
-    // We'll test this after publikasi
   });
 
   // ── GET ANGGOTA AKTIF ────────────────────────────────────────────────────
@@ -161,7 +157,6 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data.status).toBe("dipublikasi");
-      // Should have auto-generated agenda items
       expect(body.data.agendaList.length).toBeGreaterThanOrEqual(6);
     });
 
@@ -173,7 +168,21 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
       expect(res.status).toBe(400);
     });
 
-    // ── AGENDA (add before voting starts) ───────────────────────────────────
+    // ── UPDATE DIPUBLIKASI ──────────────────────────────────────────────────
+
+    it("PATCH /api/rat/:id — allows update on dipublikasi RAT", async () => {
+      const res = await app.request(`/api/rat/${ratId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ tempat: "Aula Utama", tanggalRAT: "2026-03-20" }),
+      });
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data.tempat).toBe("Aula Utama");
+      expect(body.data.tanggalRAT).toBe("2026-03-20");
+    });
+
+    // ── AGENDA (add/delete before voting starts) ────────────────────────────
 
     it("POST /api/rat/:id/agenda — adds an agenda before voting", async () => {
       const res = await app.request(`/api/rat/${ratId}/agenda`, {
@@ -185,8 +194,21 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
       expect((await res.json()).data.judul).toBe("Program Kerja Baru");
     });
 
+    it("DELETE /api/rat/:id/agenda/:agendaId — deletes an agenda before voting", async () => {
+      const detail = await (await app.request(`/api/rat/${ratId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })).json();
+      const agendaToDelete = detail.data.agendaList[detail.data.agendaList.length - 1];
+
+      const res = await app.request(`/api/rat/${ratId}/agenda/${agendaToDelete.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(res.status).toBe(200);
+      expect((await res.json()).data.deleted).toBe(true);
+    });
+
     it("POST /api/rat/:id/agenda — rejects agenda after voting starts", async () => {
-      // Move to voting first
       await app.request(`/api/rat/${ratId}/mulai-voting`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
@@ -201,7 +223,7 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
 
     // ── VOTE AGENDA ─────────────────────────────────────────────────────────
 
-    it("PATCH /api/rat/:id/vote-agenda — votes on an agenda", async () => {
+    it("PATCH /api/rat/:id/vote-agenda — votes on an agenda with counts", async () => {
       const detail = await (await app.request(`/api/rat/${ratId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })).json();
@@ -210,15 +232,25 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
       const res = await app.request(`/api/rat/${ratId}/vote-agenda`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ agendaId, hasil: "setuju", catatan: "Disetujui bersama" }),
+        body: JSON.stringify({
+          agendaId,
+          hasil: "setuju",
+          suaraSetuju: 2,
+          suaraTolak: 0,
+          suaraDitunda: 1,
+          catatan: "Disetujui bersama",
+        }),
       });
       expect(res.status).toBe(200);
       const body = await res.json();
       const votedAgenda = body.data.agendaList.find((a: any) => a.id === agendaId);
       expect(votedAgenda.hasilVoting).toBe("setuju");
+      expect(votedAgenda.suaraSetuju).toBe(2);
+      expect(votedAgenda.suaraTolak).toBe(0);
+      expect(votedAgenda.suaraDitunda).toBe(1);
     });
 
-    it("accepts 'invalid' voting value (no Zod validation on this route)", async () => {
+    it("rejects invalid voting value (Zod validator)", async () => {
       const detail = await (await app.request(`/api/rat/${ratId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })).json();
@@ -229,8 +261,7 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ agendaId, hasil: "invalid", catatan: "test" }),
       });
-      // No Zod validator — stores whatever is sent
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(400);
     });
 
     // ── KEHADIRAN ───────────────────────────────────────────────────────────
@@ -250,7 +281,7 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data.kehadiranList.length).toBe(3);
-      expect(body.data.totalHadir).toBe(2); // 2 hadir + 0 kuorum via hadir
+      expect(body.data.totalHadir).toBe(2);
       const attending = body.data.kehadiranList.filter((k: any) => k.hadir === true);
       expect(attending.length).toBe(2);
     });
@@ -265,7 +296,6 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.data.status).toBe("disahkan");
-      // Should auto-generate notulensi document
       expect(body.data.dokumenList.some((d: any) => d.tipe === "notulensi")).toBe(true);
     });
 
@@ -289,6 +319,7 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
       const body = await res.json();
       expect(body.data.tipe).toBe("lpj_pengurus");
       expect(body.data.status).toBe("final");
+      expect(body.data.content).toBeDefined();
     });
 
     it("POST /api/rat/:id/generate-laporan — rejects invalid tipe", async () => {
@@ -301,7 +332,6 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
     });
 
     it("POST /api/rat/:id/generate-laporan — returns existing document if already generated", async () => {
-      // LPJ was already generated above, should return existing
       const res = await app.request(`/api/rat/${ratId}/generate-laporan`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -309,18 +339,97 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
       });
       expect(res.status).toBe(200);
     });
+
+    it("GET /api/rat/:id/dokumen/:dokId — returns a document", async () => {
+      const detail = await (await app.request(`/api/rat/${ratId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })).json();
+      const dokumen = detail.data.dokumenList.find((d: any) => d.tipe === "lpj_pengurus");
+      expect(dokumen).toBeDefined();
+
+      const res = await app.request(`/api/rat/${ratId}/dokumen/${dokumen.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.data.id).toBe(dokumen.id);
+      expect(body.data.content).toBeDefined();
+    });
+  });
+
+  // ── PERPANJANG & CLONE ────────────────────────────────────────────────────
+
+  it("POST /api/rat — creates a RAT for perpanjang test", async () => {
+    const res = await app.request("/api/rat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        periode: "2024",
+        tanggalRAT: "2025-03-15",
+        tempat: "Ruang Rapat",
+      }),
+    });
+    expect(res.status).toBe(201);
+    perpanjangRatId = (await res.json()).data.id;
+  });
+
+  it("PATCH /api/rat/:id/perpanjang — perpanjang voting RAT", async () => {
+    // Publish and start voting first
+    await app.request(`/api/rat/${perpanjangRatId}/publikasi`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    await app.request(`/api/rat/${perpanjangRatId}/mulai-voting`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const res = await app.request(`/api/rat/${perpanjangRatId}/perpanjang`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ catatan: "Kuorum tidak tercapai" }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.status).toBe("diperpanjang");
+  });
+
+  it("POST /api/rat/:id/clone — clones diperpanjang RAT to new draft", async () => {
+    const res = await app.request(`/api/rat/${perpanjangRatId}/clone`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ catatan: "Clone untuk RAT ulang" }),
+    });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.data.status).toBe("draft");
+    expect(body.data.agendaList.length).toBeGreaterThanOrEqual(6);
+
+    // Clean up cloned RAT
+    await app.request(`/api/rat/${body.data.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  });
+
+  it("rejects clone on non-diperpanjang RAT", async () => {
+    const res = await app.request(`/api/rat/${ratId}/clone`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
   });
 
   // ── HAPUS ─────────────────────────────────────────────────────────────────
 
   it("POST /api/rat and test full lifecycle delete", async () => {
-    // Create a separate RAT for deletion test
     const createRes = await app.request("/api/rat", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
-        periode: "2024",
-        tanggalRAT: "2025-03-10",
+        periode: "2023",
+        tanggalRAT: "2024-03-10",
         tempat: "Test Delete Room",
       }),
     });
@@ -333,7 +442,6 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
     expect(res.status).toBe(200);
     expect((await res.json()).data.deleted).toBe(true);
 
-    // Verify deleted
     const verifyRes = await app.request(`/api/rat/${deleteRatId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -344,19 +452,6 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
     const res = await app.request(`/api/rat/${ratId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
-    });
-    expect(res.status).toBe(400);
-  });
-
-  // ── PERPANJANG ────────────────────────────────────────────────────────────
-
-  // We can't test perpanjang easily since our RAT is already 'disahkan'
-  // But we can test that it rejects perpanjang on non-voting RAT
-  it("rejects perpanjang on non-voting RAT", async () => {
-    const res = await app.request(`/api/rat/${ratId}/perpanjang`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ catatan: "Test perpanjang" }),
     });
     expect(res.status).toBe(400);
   });
@@ -396,7 +491,6 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
         tempat: "Secret Room",
       }),
     });
-    // bendahara is not in the allowed roles for POST /api/rat
     expect(res.status).toBe(403);
   });
 });

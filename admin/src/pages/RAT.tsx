@@ -15,6 +15,9 @@ import {
   Building2,
   Clock,
   BookOpen,
+  Copy,
+  Printer,
+  Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +35,7 @@ import { FormField } from "@/components/ui/form-field";
 import { api } from "@/lib/api";
 import { rules, validate, type FieldErrors } from "@/lib/validation";
 import { useToast } from "@/hooks/useToast";
+import { useAuth } from "@/hooks/useAuth";
 
 // ── Types ──
 interface RatItem {
@@ -52,6 +56,9 @@ interface AgendaItem {
   ratId: string;
   judul: string;
   hasilVoting?: "setuju" | "ditolak" | "ditunda";
+  suaraSetuju: number;
+  suaraTolak: number;
+  suaraDitunda: number;
   catatan?: string;
 }
 
@@ -62,6 +69,7 @@ interface DokumenItem {
   tipe: string;
   status: "disiapkan" | "final";
   url?: string;
+  content?: string;
 }
 
 interface KehadiranItem {
@@ -109,18 +117,30 @@ const tipeDokumenLabel: Record<string, string> = {
 export default function RATPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const isAdmin = ["super_admin", "admin", "pengurus"].includes(user?.role ?? "");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<"create" | "detail" | null>(null);
+  const [dialog, setDialog] = useState<"create" | "detail" | "viewDoc" | null>(null);
   const [confirmAction, setConfirmAction] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
+
+  // Document viewer
+  const [selectedDokumen, setSelectedDokumen] = useState<DokumenItem | null>(null);
 
   // Form state
   const [form, setForm] = useState({ periode: "", tanggalRAT: "", tempat: "", catatan: "" });
   const [newAgenda, setNewAgenda] = useState("");
   const [kehadiranInput, setKehadiranInput] = useState<Record<string, boolean>>({});
+  const [suratKuasaInput, setSuratKuasaInput] = useState<Record<string, boolean>>({});
   const [voteResults, setVoteResults] = useState<Record<string, "setuju" | "ditolak" | "ditunda">>({});
+  const [voteCounts, setVoteCounts] = useState<Record<string, { setuju: number; tolak: number; ditunda: number }>>({});
   const [voteNotes, setVoteNotes] = useState<Record<string, string>>({});
+
+  // Edit mode for RAT detail
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({ tanggalRAT: "", tempat: "" });
 
   // ── Queries ──
   const { data: listData, isLoading } = useQuery({
@@ -137,7 +157,13 @@ export default function RATPage() {
   const { data: anggotaData } = useQuery({
     queryKey: ["rat-anggota-aktif"],
     queryFn: () => api<{ data: AnggotaAktif[] }>("/api/rat/anggota-aktif"),
-    enabled: dialog === "detail" && !!selectedId,
+    enabled: dialog === "detail" && !!selectedId && isAdmin,
+  });
+
+  const { data: dokumenData } = useQuery({
+    queryKey: ["rat-dokumen", selectedId, selectedDokumen?.id],
+    queryFn: () => api<{ data: DokumenItem }>(`/api/rat/${selectedId}/dokumen/${selectedDokumen?.id}`),
+    enabled: dialog === "viewDoc" && !!selectedId && !!selectedDokumen?.id,
   });
 
   const detail: RatDetail | null = detailData?.data ?? null;
@@ -160,7 +186,7 @@ export default function RATPage() {
   const actionMutation = useMutation({
     mutationFn: ({ action, body }: { action: string; body?: any }) =>
       api(`/api/rat/${selectedId}/${action}`, {
-        method: "PATCH",
+        method: action === "clone" ? "POST" : "PATCH",
         body: body ? JSON.stringify(body) : undefined,
       }),
     onSuccess: () => {
@@ -170,16 +196,29 @@ export default function RATPage() {
       const label = confirmAction === "publikasi" ? "RAT dipublikasi" :
         confirmAction === "mulai-voting" ? "Voting dimulai" :
         confirmAction === "sahkan" ? "RAT disahkan" :
-        confirmAction === "perpanjang" ? "RAT diperpanjang" : "Berhasil";
+        confirmAction === "perpanjang" ? "RAT diperpanjang" :
+        confirmAction === "clone" ? "RAT ulang dibuat" : "Berhasil";
       toast(label, "success");
     },
     onError: (err: any) => {
       const label = confirmAction === "publikasi" ? "Gagal publikasi RAT" :
         confirmAction === "mulai-voting" ? "Gagal mulai voting" :
         confirmAction === "sahkan" ? "Gagal sahkan RAT" :
-        confirmAction === "perpanjang" ? "Gagal perpanjang RAT" : "Gagal";
+        confirmAction === "perpanjang" ? "Gagal perpanjang RAT" :
+        confirmAction === "clone" ? "Gagal clone RAT" : "Gagal";
       toast(err?.message || label, "error");
     },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (d: { tanggalRAT?: string; tempat?: string }) =>
+      api(`/api/rat/${selectedId}`, { method: "PATCH", body: JSON.stringify(d) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rat", selectedId] });
+      setEditMode(false);
+      toast("RAT diperbarui", "success");
+    },
+    onError: (err: any) => toast(err?.message || "Gagal memperbarui", "error"),
   });
 
   const agendaMutation = useMutation({
@@ -196,6 +235,16 @@ export default function RATPage() {
     onError: (err: any) => toast(err?.message || "Gagal tambah agenda", "error"),
   });
 
+  const deleteAgendaMutation = useMutation({
+    mutationFn: ({ ratId, agendaId }: { ratId: string; agendaId: string }) =>
+      api(`/api/rat/${ratId}/agenda/${agendaId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rat", selectedId] });
+      toast("Agenda dihapus", "success");
+    },
+    onError: (err: any) => toast(err?.message || "Gagal hapus agenda", "error"),
+  });
+
   const kehadiranMutation = useMutation({
     mutationFn: ({ ratId, kehadiran }: { ratId: string; kehadiran: any[] }) =>
       api(`/api/rat/${ratId}/kehadiran`, {
@@ -210,10 +259,10 @@ export default function RATPage() {
   });
 
   const voteMutation = useMutation({
-    mutationFn: ({ ratId, agendaId, hasil, catatan }: { ratId: string; agendaId: string; hasil: string; catatan?: string }) =>
+    mutationFn: ({ ratId, agendaId, hasil, suaraSetuju, suaraTolak, suaraDitunda, catatan }: any) =>
       api(`/api/rat/${ratId}/vote-agenda`, {
         method: "PATCH",
-        body: JSON.stringify({ agendaId, hasil, catatan }),
+        body: JSON.stringify({ agendaId, hasil, suaraSetuju, suaraTolak, suaraDitunda, catatan }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rat", selectedId] });
@@ -262,14 +311,21 @@ export default function RATPage() {
     setSelectedId(id);
     setDialog("detail");
     setVoteResults({});
+    setVoteCounts({});
     setVoteNotes({});
+    setEditMode(false);
+  };
+
+  const openDocument = (doc: DokumenItem) => {
+    setSelectedDokumen(doc);
+    setDialog("viewDoc");
   };
 
   const handleCatatKehadiran = () => {
     const kehadiran = anggotaAktif.map((a) => ({
       anggotaId: a.id,
       hadir: kehadiranInput[a.id] ?? false,
-      suratKuasa: false,
+      suratKuasa: suratKuasaInput[a.id] ?? false,
     }));
     kehadiranMutation.mutate({ ratId: selectedId!, kehadiran });
   };
@@ -277,12 +333,33 @@ export default function RATPage() {
   const handleVoteAgenda = (agendaId: string) => {
     const hasil = voteResults[agendaId];
     if (!hasil) return;
+    const counts = voteCounts[agendaId] ?? { setuju: 0, tolak: 0, ditunda: 0 };
     voteMutation.mutate({
       ratId: selectedId!,
       agendaId,
       hasil,
+      suaraSetuju: counts.setuju,
+      suaraTolak: counts.tolak,
+      suaraDitunda: counts.ditunda,
       catatan: voteNotes[agendaId] || undefined,
     });
+  };
+
+  const handleUpdateDetail = () => {
+    const payload: any = {};
+    if (editForm.tanggalRAT) payload.tanggalRAT = editForm.tanggalRAT;
+    if (editForm.tempat) payload.tempat = editForm.tempat;
+    if (Object.keys(payload).length === 0) {
+      setEditMode(false);
+      return;
+    }
+    updateMutation.mutate(payload);
+  };
+
+  const startEdit = () => {
+    if (!detail) return;
+    setEditForm({ tanggalRAT: detail.tanggalRAT, tempat: detail.tempat });
+    setEditMode(true);
   };
 
   const currentYear = new Date().getFullYear();
@@ -298,69 +375,71 @@ export default function RATPage() {
             Kelola Rapat Anggota Tahunan — forum tertinggi koperasi
           </p>
         </div>
-        <Dialog open={dialog === "create"} onOpenChange={(v) => { setDialog(v ? "create" : null); setErrors({}); }}>
-          <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
-              <Plus className="w-4 h-4 mr-1.5" />
-              Buat RAT Baru
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border-0 shadow-xl">
-            <DialogHeader>
-              <DialogTitle className="text-lg flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-emerald-600" />
+        {isAdmin && (
+          <Dialog open={dialog === "create"} onOpenChange={(v) => { setDialog(v ? "create" : null); setErrors({}); }}>
+            <DialogTrigger asChild>
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+                <Plus className="w-4 h-4 mr-1.5" />
                 Buat RAT Baru
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <FormField label="Periode Tahun Buku" error={errors.periode} required>
-                <select
-                  className="w-full h-9 px-3 rounded-lg border border-input bg-background text-sm"
-                  value={form.periode}
-                  onChange={(e) => { setForm({ ...form, periode: e.target.value }); setErrors((prev) => ({ ...prev, periode: "" })); }}
-                >
-                  <option value="">Pilih tahun...</option>
-                  {tahunOptions.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </FormField>
-              <FormField label="Tanggal RAT" error={errors.tanggalRAT} required>
-                <Input
-                  type="date"
-                  value={form.tanggalRAT}
-                  onChange={(e) => { setForm({ ...form, tanggalRAT: e.target.value }); setErrors((prev) => ({ ...prev, tanggalRAT: "" })); }}
-                />
-              </FormField>
-              <FormField label="Tempat" error={errors.tempat} required>
-                <Input
-                  value={form.tempat}
-                  onChange={(e) => { setForm({ ...form, tempat: e.target.value }); setErrors((prev) => ({ ...prev, tempat: "" })); }}
-                  placeholder="Nama ruang / lokasi"
-                />
-              </FormField>
-              <FormField label="Catatan">
-                <textarea
-                  className="w-full min-h-[80px] px-3 py-2 rounded-lg border border-input bg-background text-sm resize-y"
-                  value={form.catatan}
-                  onChange={(e) => setForm({ ...form, catatan: e.target.value })}
-                  placeholder="Catatan opsional..."
-                />
-              </FormField>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => setDialog(null)}>Batal</Button>
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={handleCreate}
-                  disabled={createMutation.isPending}
-                >
-                  {createMutation.isPending && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
-                  Buat RAT
-                </Button>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border-0 shadow-xl">
+              <DialogHeader>
+                <DialogTitle className="text-lg flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-emerald-600" />
+                  Buat RAT Baru
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <FormField label="Periode Tahun Buku" error={errors.periode} required>
+                  <select
+                    className="w-full h-9 px-3 rounded-lg border border-input bg-background text-sm"
+                    value={form.periode}
+                    onChange={(e) => { setForm({ ...form, periode: e.target.value }); setErrors((prev) => ({ ...prev, periode: "" })); }}
+                  >
+                    <option value="">Pilih tahun...</option>
+                    {tahunOptions.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </FormField>
+                <FormField label="Tanggal RAT" error={errors.tanggalRAT} required>
+                  <Input
+                    type="date"
+                    value={form.tanggalRAT}
+                    onChange={(e) => { setForm({ ...form, tanggalRAT: e.target.value }); setErrors((prev) => ({ ...prev, tanggalRAT: "" })); }}
+                  />
+                </FormField>
+                <FormField label="Tempat" error={errors.tempat} required>
+                  <Input
+                    value={form.tempat}
+                    onChange={(e) => { setForm({ ...form, tempat: e.target.value }); setErrors((prev) => ({ ...prev, tempat: "" })); }}
+                    placeholder="Nama ruang / lokasi"
+                  />
+                </FormField>
+                <FormField label="Catatan">
+                  <textarea
+                    className="w-full min-h-[80px] px-3 py-2 rounded-lg border border-input bg-background text-sm resize-y"
+                    value={form.catatan}
+                    onChange={(e) => setForm({ ...form, catatan: e.target.value })}
+                    placeholder="Catatan opsional..."
+                  />
+                </FormField>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setDialog(null)}>Batal</Button>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={handleCreate}
+                    disabled={createMutation.isPending}
+                  >
+                    {createMutation.isPending && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                    Buat RAT
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* List */}
@@ -373,7 +452,7 @@ export default function RATPage() {
           <CardContent className="flex flex-col items-center py-16">
             <Building2 className="w-12 h-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-lg font-medium">Belum ada RAT</p>
-            <p className="text-muted-foreground text-sm">Buat RAT baru untuk memulai</p>
+            <p className="text-muted-foreground text-sm">{isAdmin ? "Buat RAT baru untuk memulai" : "Tunggu publikasi RAT dari pengurus"}</p>
           </CardContent>
         </Card>
       ) : (
@@ -435,7 +514,7 @@ export default function RATPage() {
       <Dialog
         open={dialog === "detail"}
         onOpenChange={(v) => {
-          if (!v) { setDialog(null); setSelectedId(null); }
+          if (!v) { setDialog(null); setSelectedId(null); setEditMode(false); }
         }}
       >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto border-0 shadow-xl">
@@ -450,59 +529,87 @@ export default function RATPage() {
                   </Badge>
                 </DialogTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {detail.tanggalRAT} — {detail.tempat}
+                  {editMode ? (
+                    <div className="flex flex-col gap-2 mt-2">
+                      <div className="flex gap-2">
+                        <Input type="date" value={editForm.tanggalRAT} onChange={(e) => setEditForm({ ...editForm, tanggalRAT: e.target.value })} />
+                        <Input value={editForm.tempat} onChange={(e) => setEditForm({ ...editForm, tempat: e.target.value })} placeholder="Tempat" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handleUpdateDetail} disabled={updateMutation.isPending}>
+                          {updateMutation.isPending && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                          Simpan
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditMode(false)}>Batal</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      {detail.tanggalRAT} — {detail.tempat}
+                      {isAdmin && (detail.status === "draft" || detail.status === "dipublikasi") && (
+                        <Button variant="ghost" size="sm" className="h-6 px-2" onClick={startEdit}>
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </span>
+                  )}
                 </p>
               </DialogHeader>
 
               {/* Status & Actions */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {detail.status === "draft" && (
-                  <Button
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    size="sm"
-                    onClick={() => setConfirmAction("publikasi")}
-                    disabled={actionMutation.isPending}
-                  >
-                    <Send className="w-4 h-4 mr-1" />
-                    Publikasi & Generate Agenda
-                  </Button>
-                )}
-                {detail.status === "dipublikasi" && (
-                  <Button size="sm" onClick={() => setConfirmAction("mulai-voting")} disabled={actionMutation.isPending}>
-                    <Vote className="w-4 h-4 mr-1" />
-                    Mulai Voting
-                  </Button>
-                )}
-                {detail.status === "voting" && (
-                  <>
+              {isAdmin && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {detail.status === "draft" && (
                     <Button
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
                       size="sm"
-                      onClick={() => setConfirmAction("sahkan")}
-                      disabled={actionMutation.isPending || !detail.kuorum}
+                      onClick={() => setConfirmAction("publikasi")}
+                      disabled={actionMutation.isPending}
                     >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Sahkan RAT
+                      <Send className="w-4 h-4 mr-1" />
+                      Publikasi & Generate Agenda
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setConfirmAction("perpanjang")} disabled={actionMutation.isPending}>
-                      <Clock className="w-4 h-4 mr-1" />
-                      Perpanjang (RAT Ulang)
+                  )}
+                  {detail.status === "dipublikasi" && (
+                    <Button size="sm" onClick={() => setConfirmAction("mulai-voting")} disabled={actionMutation.isPending}>
+                      <Vote className="w-4 h-4 mr-1" />
+                      Mulai Voting
                     </Button>
-                  </>
-                )}
-                {detail.status === "diperpanjang" && (
-                  <p className="text-sm text-muted-foreground py-1">RAT ini diperpanjang. Buat RAT baru untuk periode ini.</p>
-                )}
-                {(detail.status === "draft" || detail.status === "diperpanjang") && (
-                  <Button variant="outline" size="sm" className="text-red-600" onClick={() => setConfirmAction("hapus")} disabled={deleteMutation.isPending}>
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Hapus
-                  </Button>
-                )}
-              </div>
+                  )}
+                  {detail.status === "voting" && (
+                    <>
+                      <Button
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        size="sm"
+                        onClick={() => setConfirmAction("sahkan")}
+                        disabled={actionMutation.isPending || !detail.kuorum}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Sahkan RAT
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setConfirmAction("perpanjang")} disabled={actionMutation.isPending}>
+                        <Clock className="w-4 h-4 mr-1" />
+                        Perpanjang (RAT Ulang)
+                      </Button>
+                    </>
+                  )}
+                  {detail.status === "diperpanjang" && (
+                    <Button size="sm" onClick={() => setConfirmAction("clone")} disabled={actionMutation.isPending}>
+                      <Copy className="w-4 h-4 mr-1" />
+                      Buat RAT Ulang
+                    </Button>
+                  )}
+                  {(detail.status === "draft" || detail.status === "diperpanjang") && (
+                    <Button variant="outline" size="sm" className="text-red-600" onClick={() => setConfirmAction("hapus")} disabled={deleteMutation.isPending}>
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Hapus
+                    </Button>
+                  )}
+                </div>
+              )}
 
               {/* Confirm action dialog */}
-              {confirmAction && (
+              {confirmAction && isAdmin && (
                 <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
@@ -513,6 +620,7 @@ export default function RATPage() {
                           {confirmAction === "mulai-voting" && "Mulai sesi voting? Pastikan kehadiran sudah dicatat."}
                           {confirmAction === "sahkan" && `Sahkan RAT? (Hadir: ${detail.totalHadir}/${detail.totalAnggota})`}
                           {confirmAction === "perpanjang" && "RAT ulang karena kuorum tidak terpenuhi?"}
+                          {confirmAction === "clone" && "Buat draft RAT baru dari RAT yang diperpanjang ini?"}
                           {confirmAction === "hapus" && "Hapus RAT ini? Data kehadiran & agenda akan ikut terhapus."}
                         </p>
                         <div className="flex gap-2 mt-3">
@@ -562,7 +670,7 @@ export default function RATPage() {
 
                 {/* TAB: Agenda */}
                 <TabsContent value="agenda" className="space-y-4">
-                  {(detail.status === "draft" || detail.status === "dipublikasi") && (
+                  {isAdmin && (detail.status === "draft" || detail.status === "dipublikasi") && (
                     <div className="flex gap-2">
                       <Input
                         value={newAgenda}
@@ -578,7 +686,7 @@ export default function RATPage() {
 
                   {detail.agendaList.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground text-sm">
-                      Belum ada agenda. Publikasi RAT untuk generate agenda default.
+                      Belum ada agenda. {isAdmin && "Publikasi RAT untuk generate agenda default."}
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -605,36 +713,98 @@ export default function RATPage() {
                                        agenda.hasilVoting === "ditolak" ? "✗ Ditolak" : "⏳ Ditunda"}
                                     </Badge>
                                   )}
+                                  {(agenda.suaraSetuju + agenda.suaraTolak + agenda.suaraDitunda) > 0 && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Suara: {agenda.suaraSetuju} setuju, {agenda.suaraTolak} menolak, {agenda.suaraDitunda} ditunda
+                                    </p>
+                                  )}
                                   {agenda.catatan && <p className="text-xs text-muted-foreground mt-1">{agenda.catatan}</p>}
                                 </div>
                               </div>
 
-                              {detail.status === "voting" && !agenda.hasilVoting && (
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <select
-                                    className="h-8 text-xs rounded-lg border border-input bg-background px-2"
-                                    value={voteResults[agenda.id] ?? ""}
-                                    onChange={(e) => setVoteResults({ ...voteResults, [agenda.id]: e.target.value as any })}
-                                  >
-                                    <option value="">Hasil</option>
-                                    <option value="setuju">Setuju</option>
-                                    <option value="ditolak">Ditolak</option>
-                                    <option value="ditunda">Ditunda</option>
-                                  </select>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => handleVoteAgenda(agenda.id)}
-                                    disabled={!voteResults[agenda.id] || voteMutation.isPending}
-                                  >
-                                    Simpan
-                                  </Button>
-                                </div>
-                              )}
+                              <div className="flex items-center gap-2 shrink-0">
+                                {isAdmin && detail.status === "voting" && !agenda.hasilVoting && (
+                                  <div className="flex flex-col gap-2 min-w-[200px]">
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        placeholder="Setuju"
+                                        className="h-8 text-xs"
+                                        value={voteCounts[agenda.id]?.setuju ?? ""}
+                                        onChange={(e) => setVoteCounts({
+                                          ...voteCounts,
+                                          [agenda.id]: { ...(voteCounts[agenda.id] ?? { setuju: 0, tolak: 0, ditunda: 0 }), setuju: Number(e.target.value) }
+                                        })}
+                                      />
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        placeholder="Tolak"
+                                        className="h-8 text-xs"
+                                        value={voteCounts[agenda.id]?.tolak ?? ""}
+                                        onChange={(e) => setVoteCounts({
+                                          ...voteCounts,
+                                          [agenda.id]: { ...(voteCounts[agenda.id] ?? { setuju: 0, tolak: 0, ditunda: 0 }), tolak: Number(e.target.value) }
+                                        })}
+                                      />
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        placeholder="Ditunda"
+                                        className="h-8 text-xs"
+                                        value={voteCounts[agenda.id]?.ditunda ?? ""}
+                                        onChange={(e) => setVoteCounts({
+                                          ...voteCounts,
+                                          [agenda.id]: { ...(voteCounts[agenda.id] ?? { setuju: 0, tolak: 0, ditunda: 0 }), ditunda: Number(e.target.value) }
+                                        })}
+                                      />
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <select
+                                        className="h-8 text-xs rounded-lg border border-input bg-background px-2 flex-1"
+                                        value={voteResults[agenda.id] ?? ""}
+                                        onChange={(e) => setVoteResults({ ...voteResults, [agenda.id]: e.target.value as any })}
+                                      >
+                                        <option value="">Hasil</option>
+                                        <option value="setuju">Setuju</option>
+                                        <option value="ditolak">Ditolak</option>
+                                        <option value="ditunda">Ditunda</option>
+                                      </select>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleVoteAgenda(agenda.id)}
+                                        disabled={!voteResults[agenda.id] || voteMutation.isPending}
+                                      >
+                                        Simpan
+                                      </Button>
+                                    </div>
+                                    <Input
+                                      placeholder="Catatan voting..."
+                                      className="h-8 text-xs"
+                                      value={voteNotes[agenda.id] ?? ""}
+                                      onChange={(e) => setVoteNotes({ ...voteNotes, [agenda.id]: e.target.value })}
+                                    />
+                                  </div>
+                                )}
 
-                              {detail.status === "voting" && agenda.hasilVoting && (
-                                <p className="text-xs text-muted-foreground shrink-0">Sudah divote</p>
-                              )}
+                                {isAdmin && detail.status === "voting" && agenda.hasilVoting && (
+                                  <p className="text-xs text-muted-foreground shrink-0">Sudah divote</p>
+                                )}
+
+                                {isAdmin && (detail.status === "draft" || detail.status === "dipublikasi") && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-600 h-7 w-7 p-0"
+                                    onClick={() => deleteAgendaMutation.mutate({ ratId: selectedId!, agendaId: agenda.id })}
+                                    disabled={deleteAgendaMutation.isPending}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
@@ -654,7 +824,7 @@ export default function RATPage() {
                         <span className="text-amber-600 dark:text-amber-400 ml-2">Belum kuorum (min 50%+1)</span>
                       )}
                     </p>
-                    {(detail.status === "dipublikasi" || detail.status === "voting") && (
+                    {isAdmin && (detail.status === "dipublikasi" || detail.status === "voting") && (
                       <Button size="sm" onClick={handleCatatKehadiran} disabled={kehadiranMutation.isPending}>
                         {kehadiranMutation.isPending && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
                         Simpan Kehadiran
@@ -667,6 +837,7 @@ export default function RATPage() {
                       anggotaAktif.map((a) => {
                         const existing = detail.kehadiranList?.find((k) => k.anggotaId === a.id);
                         const isHadir = kehadiranInput[a.id] ?? existing?.hadir ?? false;
+                        const isKuasa = suratKuasaInput[a.id] ?? existing?.suratKuasa ?? false;
                         return (
                           <div key={a.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-muted/50">
                             <div className="flex items-center gap-2">
@@ -678,52 +849,74 @@ export default function RATPage() {
                                 <p className="text-xs text-muted-foreground">{a.noAnggota}</p>
                               </div>
                             </div>
-                            {(detail.status === "dipublikasi" || detail.status === "voting") ? (
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={isHadir}
-                                  onChange={(e) => setKehadiranInput({ ...kehadiranInput, [a.id]: e.target.checked })}
-                                  className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                                />
-                                <span className="text-xs text-muted-foreground">{isHadir ? "Hadir" : "Tidak"}</span>
-                              </label>
+                            {isAdmin && (detail.status === "dipublikasi" || detail.status === "voting") ? (
+                              <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={isKuasa}
+                                    onChange={(e) => setSuratKuasaInput({ ...suratKuasaInput, [a.id]: e.target.checked })}
+                                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span className="text-[11px] text-muted-foreground">Kuasa</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={isHadir}
+                                    onChange={(e) => setKehadiranInput({ ...kehadiranInput, [a.id]: e.target.checked })}
+                                    className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                                  />
+                                  <span className="text-xs text-muted-foreground">{isHadir ? "Hadir" : "Tidak"}</span>
+                                </label>
+                              </div>
                             ) : (
-                              <Badge
-                                className={`font-medium text-[11px] px-2 py-0.5 ${isHadir ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900" : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400"}`}
-                                variant="outline"
-                              >
-                                {isHadir ? "Hadir" : "Tidak Hadir"}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                {isKuasa && (
+                                  <Badge className="font-medium text-[11px] px-2 py-0.5 bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900" variant="outline">
+                                    Kuasa
+                                  </Badge>
+                                )}
+                                <Badge
+                                  className={`font-medium text-[11px] px-2 py-0.5 ${isHadir ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900" : "bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400"}`}
+                                  variant="outline"
+                                >
+                                  {isHadir ? "Hadir" : "Tidak Hadir"}
+                                </Badge>
+                              </div>
                             )}
                           </div>
                         );
                       })
                     ) : (
-                      <p className="text-center py-4 text-sm text-muted-foreground">Memuat data anggota...</p>
+                      <p className="text-center py-4 text-sm text-muted-foreground">
+                        {isAdmin ? "Memuat data anggota..." : "Data kehadiran tersedia di sini."}
+                      </p>
                     )}
                   </div>
                 </TabsContent>
 
                 {/* TAB: Dokumen */}
                 <TabsContent value="dokumen" className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    {["lpj_pengurus", "laporan_keuangan", "laporan_pengawas", "shu", "rencana_kerja", "rapb"].map((tipe) => {
-                      const exists = detail.dokumenList?.some((d) => d.tipe === tipe);
-                      return (
-                        <Button
-                          key={tipe}
-                          variant={exists ? "outline" : "secondary"}
-                          size="sm"
-                          onClick={() => generateMutation.mutate({ ratId: selectedId!, tipe })}
-                          disabled={generateMutation.isPending || exists}
-                        >
-                          {exists ? <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-500" /> : <Plus className="w-3.5 h-3.5 mr-1" />}
-                          {tipeDokumenLabel[tipe]}
-                        </Button>
-                      );
-                    })}
-                  </div>
+                  {isAdmin && (
+                    <div className="flex flex-wrap gap-2">
+                      {["lpj_pengurus", "laporan_keuangan", "laporan_pengawas", "shu", "rencana_kerja", "rapb"].map((tipe) => {
+                        const exists = detail.dokumenList?.some((d) => d.tipe === tipe);
+                        return (
+                          <Button
+                            key={tipe}
+                            variant={exists ? "outline" : "secondary"}
+                            size="sm"
+                            onClick={() => generateMutation.mutate({ ratId: selectedId!, tipe })}
+                            disabled={generateMutation.isPending || exists}
+                          >
+                            {exists ? <CheckCircle className="w-3.5 h-3.5 mr-1 text-emerald-500" /> : <Plus className="w-3.5 h-3.5 mr-1" />}
+                            {tipeDokumenLabel[tipe]}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {detail.dokumenList?.length > 0 ? (
                     <div className="space-y-2">
@@ -739,13 +932,19 @@ export default function RATPage() {
                               {doc.status === "final" ? "Final" : "Disiapkan"}
                             </Badge>
                           </div>
-                          <Badge variant="outline" className="text-[11px]">{tipeDokumenLabel[doc.tipe]}</Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[11px]">{tipeDokumenLabel[doc.tipe]}</Badge>
+                            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => openDocument(doc)}>
+                              <Eye className="w-3.5 h-3.5 mr-1" />
+                              Lihat
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <p className="text-center py-4 text-sm text-muted-foreground">
-                      Belum ada dokumen. Generate dokumen dari data sistem.
+                      Belum ada dokumen. {isAdmin && "Generate dokumen dari data sistem."}
                     </p>
                   )}
                 </TabsContent>
@@ -803,6 +1002,32 @@ export default function RATPage() {
                 </TabsContent>
               </Tabs>
             </>
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Viewer Dialog */}
+      <Dialog open={dialog === "viewDoc"} onOpenChange={(v) => { if (!v) { setDialog("detail"); setSelectedDokumen(null); } }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-0 shadow-xl">
+          <DialogHeader className="flex flex-row items-center justify-between">
+            <DialogTitle className="text-lg flex items-center gap-2">
+              <FileText className="w-5 h-5 text-emerald-600" />
+              {selectedDokumen?.nama ?? "Dokumen"}
+            </DialogTitle>
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Printer className="w-4 h-4 mr-1" />
+              Cetak
+            </Button>
+          </DialogHeader>
+          {dokumenData?.data?.content ? (
+            <div
+              className="prose prose-sm max-w-none dark:prose-invert"
+              dangerouslySetInnerHTML={{ __html: dokumenData.data.content }}
+            />
           ) : (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />

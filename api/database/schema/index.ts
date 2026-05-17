@@ -188,6 +188,9 @@ export const ratAgenda = sqliteTable("rat_agenda", {
   ratId: text("rat_id").notNull().references(() => rat.id),
   judul: text("judul").notNull(),
   hasilVoting: text("hasil_voting", { enum: ["setuju", "ditolak", "ditunda"] }),
+  suaraSetuju: integer("suara_setuju").notNull().default(0),
+  suaraTolak: integer("suara_tolak").notNull().default(0),
+  suaraDitunda: integer("suara_ditunda").notNull().default(0),
   catatan: text("catatan"),
   createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
 });
@@ -199,6 +202,7 @@ export const ratDokumen = sqliteTable("rat_dokumen", {
   tipe: text("tipe", { enum: ["lpj_pengurus", "laporan_keuangan", "laporan_pengawas", "shu", "rencana_kerja", "rapb", "notulensi", "lain"] }).notNull(),
   status: text("status", { enum: ["disiapkan", "final"] }).notNull().default("disiapkan"),
   url: text("url"),
+  content: text("content"),
   createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
 });
 

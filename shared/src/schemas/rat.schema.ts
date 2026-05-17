@@ -20,6 +20,9 @@ export const ratAgendaSchema = z.object({
 export const ratVotingSchema = z.object({
   agendaId: z.string().min(1, "Agenda ID wajib diisi"),
   hasil: z.enum(["setuju", "ditolak", "ditunda"]),
+  suaraSetuju: z.number().int().min(0).default(0),
+  suaraTolak: z.number().int().min(0).default(0),
+  suaraDitunda: z.number().int().min(0).default(0),
   catatan: z.string().optional(),
 });
 
@@ -33,8 +36,25 @@ export const ratBulkKehadiranSchema = z.object({
   kehadiran: z.array(ratKehadiranSchema).min(1, "Minimal 1 data kehadiran"),
 });
 
+export const ratGenerateLaporanSchema = z.object({
+  tipe: z.enum(["lpj_pengurus", "laporan_keuangan", "laporan_pengawas", "shu", "rencana_kerja", "rapb"], {
+    message: "Tipe dokumen tidak valid",
+  }),
+});
+
+export const ratPerpanjangSchema = z.object({
+  catatan: z.string().optional(),
+});
+
+export const ratCloneSchema = z.object({
+  catatan: z.string().optional(),
+});
+
 export type RatInput = z.infer<typeof ratSchema>;
 export type RatUpdateInput = z.infer<typeof ratUpdateSchema>;
 export type RatAgendaInput = z.infer<typeof ratAgendaSchema>;
 export type RatVotingInput = z.infer<typeof ratVotingSchema>;
 export type RatKehadiranInput = z.infer<typeof ratKehadiranSchema>;
+export type RatGenerateLaporanInput = z.infer<typeof ratGenerateLaporanSchema>;
+export type RatPerpanjangInput = z.infer<typeof ratPerpanjangSchema>;
+export type RatCloneInput = z.infer<typeof ratCloneSchema>;

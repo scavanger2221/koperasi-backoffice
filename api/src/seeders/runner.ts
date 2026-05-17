@@ -23,7 +23,7 @@ import { seedJurnal } from "./seed-jurnal.js";
 import { seedShu } from "./seed-shu.js";
 import { seedRat } from "./seed-rat.js";
 
-type SeedFn = (db: ReturnType<typeof drizzle>) => Promise<void>;
+type SeedFn = (db: any) => Promise<void>;
 
 interface SeederDef {
   name: string;
