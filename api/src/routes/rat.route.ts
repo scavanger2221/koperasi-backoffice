@@ -39,4 +39,7 @@ export const ratRoute = new Hono()
   .post("/:id/kehadiran", requireRole(["super_admin", "admin", "pengurus"]), zValidator("json", ratBulkKehadiranSchema), auditMiddleware("CATAT_KAHADIRAN_RAT", "rat"), ratController.catatKehadiran)
   // Dokumen
   .post("/:id/generate-laporan", requireRole(["super_admin", "admin", "pengurus"]), zValidator("json", ratGenerateLaporanSchema), auditMiddleware("GENERATE_LAPORAN_RAT", "rat"), ratController.generateLaporan)
-  .get("/:id/dokumen/:dokId", requireRole(["super_admin", "admin", "pengurus", "bendahara", "pengawas", "anggota"]), ratController.getDokumen);
+  .get("/:id/dokumen/:dokId", requireRole(["super_admin", "admin", "pengurus", "bendahara", "pengawas", "anggota"]), ratController.getDokumen)
+  // Export
+  .get("/:id/export/xlsx", requireRole(["super_admin", "admin", "pengurus", "bendahara", "pengawas"]), ratController.exportXLSX)
+  .get("/:id/export/pdf", requireRole(["super_admin", "admin", "pengurus", "bendahara", "pengawas"]), ratController.exportPDF);

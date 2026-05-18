@@ -3,7 +3,11 @@ import { userService } from "../services/user.service.js";
 
 export const userController = {
   async list(c: Context) {
-    const result = await userService.list();
+    const query = c.req.query();
+    const result = await userService.list({
+      page: Number(query.page) || 1,
+      limit: Number(query.limit) || 20,
+    });
     return c.json({ success: true, ...result });
   },
 

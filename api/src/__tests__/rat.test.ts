@@ -493,4 +493,36 @@ describe("RAT (Rapat Anggota Tahunan)", () => {
     });
     expect(res.status).toBe(403);
   });
+
+  // ── EXPORT ────────────────────────────────────────────────────────────────
+
+  it("GET /api/rat/:id/export/xlsx — exports RAT to XLSX", async () => {
+    // Create a RAT first
+    const createRes = await app.request("/api/rat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        periode: "2026",
+        tanggalRAT: "2026-03-20",
+        tempat: "Aula Koperasi",
+      }),
+    });
+    const exportRatId = (await createRes.json()).data.id;
+
+    const res = await app.request(`/api/rat/${exportRatId}/export/xlsx`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+  });
+
+  it("GET /api/rat/:id/export/pdf — exports RAT to PDF", async () => {
+    const res = await app.request(`/api/rat/${ratId}/export/pdf`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Type")).toBe("application/pdf");
+  });
 });

@@ -66,12 +66,19 @@ export default function UsersPage() {
   const [selected, setSelected] = useState<UserItem | null>(null);
   const [form, setForm] = useState({ email: "", password: "", nama: "", role: "pengurus" });
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => api<{ data: UserItem[] }>("/api/users"),
+    queryKey: ["users", page],
+    queryFn: async () => {
+      const res = await api<{ data: UserItem[]; meta?: any }>(`/api/users?page=${page}&limit=20`);
+      setTotal((res as any).meta?.total ?? 0);
+      return res;
+    },
+    placeholderData: (prev) => prev,
   });
 
   const createMutation = useMutation({
@@ -339,6 +346,19 @@ export default function UsersPage() {
                   );
                 })}
               </div>
+
+              {/* Pagination */}
+              {total > 20 && (
+                <div className="flex items-center justify-between gap-4 pt-4 border-t border-border mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Halaman {page} dari {Math.ceil(total / 20)} (total {total} pengguna)
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>Sebelumnya</Button>
+                    <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= Math.ceil(total / 20)}>Selanjutnya</Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </CardContent>

@@ -14,6 +14,8 @@ import AuditLogPage from "@/pages/AuditLog";
 import SHUPage from "@/pages/SHU";
 import RATPage from "@/pages/RAT";
 import UsersPage from "@/pages/Users";
+import PengaturanPage from "@/pages/Pengaturan";
+import PeriodeBukuPage from "@/pages/PeriodeBuku";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, ready } = useAuth();
@@ -119,6 +121,22 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <UsersPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/pengaturan"
+        element={
+          <PrivateRoute>
+            <PengaturanPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/periode-buku"
+        element={
+          <PrivateRoute>
+            <PeriodeBukuPage />
           </PrivateRoute>
         }
       />

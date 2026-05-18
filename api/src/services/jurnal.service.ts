@@ -254,16 +254,27 @@ export async function getBukuBesar({
   return { data, meta: { page, limit, total }, akun: akunInfo };
 }
 
-export async function getNeracaSaldo() {
+export async function getNeracaSaldo({
+  tanggalMulai,
+  tanggalSelesai,
+}: {
+  tanggalMulai?: string;
+  tanggalSelesai?: string;
+} = {}) {
   const allAkun = await db.select().from(akun).where(eq(akun.aktif, true));
   const result = [];
 
   for (const a of allAkun) {
+    let dateFilter = "";
+    if (tanggalMulai && tanggalSelesai) {
+      dateFilter = `AND j.tanggal >= '${tanggalMulai}' AND j.tanggal <= '${tanggalSelesai}'`;
+    }
     const rows = db.all<{ debit: string; kredit: string }>(sql`
       SELECT SUM(CAST(jd.debit AS INTEGER)) as debit,
              SUM(CAST(jd.kredit AS INTEGER)) as kredit
       FROM jurnal_detail jd
-      WHERE jd.akun_id = ${a.id}
+      INNER JOIN jurnal j ON jd.jurnal_id = j.id
+      WHERE jd.akun_id = ${a.id} ${sql.raw(dateFilter)}
     `);
     const row = rows[0];
     const totalDebit = Number(row?.debit ?? 0);
@@ -345,17 +356,28 @@ export async function getLabaRugi({
   };
 }
 
-export async function getNeraca() {
+export async function getNeraca({
+  tanggalMulai,
+  tanggalSelesai,
+}: {
+  tanggalMulai?: string;
+  tanggalSelesai?: string;
+} = {}) {
   const asetAkun = await db.select().from(akun).where(eq(akun.tipe, "aset"));
   const kewajibanAkun = await db.select().from(akun).where(eq(akun.tipe, "kewajiban"));
   const ekuitasAkun = await db.select().from(akun).where(eq(akun.tipe, "ekuitas"));
 
   const getSaldo = (a: typeof akun.$inferSelect) => {
+    let dateFilter = "";
+    if (tanggalMulai && tanggalSelesai) {
+      dateFilter = `AND j.tanggal >= '${tanggalMulai}' AND j.tanggal <= '${tanggalSelesai}'`;
+    }
     const rows = db.all<{ debit: string; kredit: string }>(sql`
       SELECT SUM(CAST(jd.debit AS INTEGER)) as debit,
              SUM(CAST(jd.kredit AS INTEGER)) as kredit
       FROM jurnal_detail jd
-      WHERE jd.akun_id = ${a.id}
+      INNER JOIN jurnal j ON jd.jurnal_id = j.id
+      WHERE jd.akun_id = ${a.id} ${sql.raw(dateFilter)}
     `);
     const row = rows[0];
     const d = Number(row?.debit ?? 0);
@@ -367,10 +389,10 @@ export async function getNeraca() {
   const kewajiban = kewajibanAkun.map((a) => ({ akun: a, saldo: getSaldo(a) })).filter((r) => r.saldo !== 0);
   const ekuitas = ekuitasAkun.map((a) => ({ akun: a, saldo: getSaldo(a) })).filter((r) => r.saldo !== 0);
 
-  // Hitung laba berjalan (pendapatan - biaya) dari seluruh periode
+  // Hitung laba berjalan (pendapatan - biaya) dari periode yang sama
   // Laba berjalan ditambahkan ke ekuitas agar neraca balance
   // sampai closing entry / jurnal penutup dijalankan
-  const labaRugi = await getLabaRugi({});
+  const labaRugi = await getLabaRugi({ tanggalMulai, tanggalSelesai });
   const labaBerjalan = labaRugi.labaRugi;
 
   if (labaBerjalan !== 0) {

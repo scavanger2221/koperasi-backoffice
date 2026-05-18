@@ -766,6 +766,166 @@ class RatService {
       </div>
     `;
   }
+
+  // ── RAT Export: XLSX ──
+  async exportXLSX(ratId: string): Promise<Buffer> {
+    const r = await this.getById(ratId);
+    const ExcelJS = (await import("exceljs")).default;
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "Koperasi Backoffice";
+    wb.created = new Date();
+
+    // Sheet 1: Info RAT
+    const ws1 = wb.addWorksheet("Info RAT");
+    ws1.mergeCells("A1:D1");
+    ws1.getCell("A1").value = `RAPAT ANGGOTA TAHUNAN - PERIODE ${r.periode}`;
+    ws1.getCell("A1").font = { name: "Calibri", size: 14, bold: true };
+    ws1.getCell("A1").alignment = { horizontal: "center" };
+    ws1.getRow(1).height = 30;
+
+    const infoData = [
+      ["Periode", r.periode],
+      ["Tanggal RAT", r.tanggalRAT],
+      ["Tempat", r.tempat],
+      ["Status", r.status],
+      ["Total Anggota", r.totalAnggota],
+      ["Total Hadir", r.totalHadir],
+      ["Kuorum", r.kuorum ? "Ya" : "Tidak"],
+    ];
+    infoData.forEach(([k, v]) => {
+      const row = ws1.addRow([k, v]);
+      row.eachCell((cell, col) => {
+        cell.font = { name: "Calibri", size: 11 };
+        if (col === 1) cell.font = { name: "Calibri", size: 11, bold: true };
+      });
+    });
+    ws1.getColumn(1).width = 20;
+    ws1.getColumn(2).width = 40;
+
+    // Sheet 2: Agenda
+    const ws2 = wb.addWorksheet("Agenda & Voting");
+    const agHeaders = ["No", "Agenda", "Hasil", "Suara Setuju", "Suara Tolak", "Suara Ditunda"];
+    const agHeaderRow = ws2.addRow(agHeaders);
+    agHeaderRow.eachCell((cell) => {
+      cell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF059669" } };
+      cell.alignment = { horizontal: "center" };
+    });
+
+    (r.agendaList || []).forEach((a: any, i: number) => {
+      const row = ws2.addRow([i + 1, a.judul, a.hasilVoting || "-", a.suaraSetuju, a.suaraTolak, a.suaraDitunda]);
+      row.eachCell((cell) => { cell.font = { name: "Calibri", size: 10 }; });
+    });
+    ws2.getColumn(1).width = 6;
+    ws2.getColumn(2).width = 50;
+    ws2.getColumn(3).width = 15;
+    ws2.getColumn(4).width = 18;
+    ws2.getColumn(5).width = 18;
+    ws2.getColumn(6).width = 18;
+
+    // Sheet 3: Kehadiran
+    const ws3 = wb.addWorksheet("Kehadiran");
+    const khHeaders = ["No", "No Anggota", "Nama", "Hadir", "Surat Kuasa"];
+    const khHeaderRow = ws3.addRow(khHeaders);
+    khHeaderRow.eachCell((cell) => {
+      cell.font = { name: "Calibri", size: 11, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF059669" } };
+      cell.alignment = { horizontal: "center" };
+    });
+
+    (r.kehadiranList || []).forEach((k: any, i: number) => {
+      const row = ws3.addRow([i + 1, k.anggota?.noAnggota || "", k.anggota?.nama || "", k.hadir ? "Ya" : "Tidak", k.suratKuasa ? "Ya" : "Tidak"]);
+      row.eachCell((cell) => { cell.font = { name: "Calibri", size: 10 }; });
+    });
+    ws3.getColumn(1).width = 6;
+    ws3.getColumn(2).width = 18;
+    ws3.getColumn(3).width = 35;
+    ws3.getColumn(4).width = 12;
+    ws3.getColumn(5).width = 16;
+
+    return Buffer.from(await wb.xlsx.writeBuffer());
+  }
+
+  // ── RAT Export: PDF (comprehensive report) ──
+  async exportPDF(ratId: string): Promise<Buffer> {
+    const r = await this.getById(ratId);
+    const PDFDocument = (await import("pdfkit")).default;
+
+    const doc = new PDFDocument({ margin: 40, size: "A4" });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+
+    // ── Header ──
+    doc.fontSize(16).font("Helvetica-Bold").text("RAPAT ANGGOTA TAHUNAN (RAT)", { align: "center" });
+    doc.fontSize(13).text(`Periode Tahun Buku ${r.periode}`, { align: "center" });
+    doc.moveDown(0.5);
+
+    // ── Info ──
+    doc.fontSize(10).font("Helvetica");
+    doc.text(`Tanggal: ${r.tanggalRAT}`);
+    doc.text(`Tempat: ${r.tempat}`);
+    doc.text(`Status: ${r.status.charAt(0).toUpperCase() + r.status.slice(1)}`);
+    doc.text(`Hadir: ${r.totalHadir} dari ${r.totalAnggota} anggota`);
+    doc.text(`Kuorum: ${r.kuorum ? "Terpenuhi" : "Tidak terpenuhi"}`);
+    doc.moveDown(0.5);
+
+    // ── Agenda ──
+    if (r.agendaList && r.agendaList.length > 0) {
+      doc.fontSize(12).font("Helvetica-Bold").text("Agenda & Hasil Voting");
+      doc.moveDown(0.3);
+
+      const colWidths = [25, 300, 120];
+      const startX = 40;
+
+      // Header
+      let yPos = doc.y;
+      doc.rect(startX, yPos - 4, colWidths.reduce((a, b) => a + b, 0), 16).fill("#059669");
+      doc.fillColor("#FFFFFF").fontSize(8).font("Helvetica-Bold");
+      doc.text("No", startX + 3, yPos, { width: 20, align: "center", lineBreak: false });
+      doc.text("Agenda", startX + 25, yPos, { width: 295, lineBreak: false });
+      doc.text("Hasil", startX + 350, yPos, { width: 115, lineBreak: false });
+      doc.fillColor("#000000");
+      yPos += 16;
+
+      doc.font("Helvetica").fontSize(8);
+      (r.agendaList || []).forEach((a: any, i: number) => {
+        if (yPos > 720) { doc.addPage(); yPos = 40; }
+        doc.text(String(i + 1), startX + 3, yPos, { width: 20, align: "center", lineBreak: false });
+        doc.text(a.judul, startX + 25, yPos, { width: 295, lineBreak: false });
+        doc.text(a.hasilVoting || "-", startX + 350, yPos, { width: 115, lineBreak: false });
+        doc.moveTo(startX, yPos + 12).lineTo(startX + colWidths.reduce((a, b) => a + b, 0), yPos + 12).strokeColor("#E5E7EB").stroke();
+        yPos += 16;
+      });
+
+      yPos += 8;
+      doc.y = yPos;
+    }
+
+    // ── Kehadiran summary ──
+    doc.fontSize(12).font("Helvetica-Bold").text("Ringkasan Kehadiran");
+    doc.moveDown(0.3);
+    doc.fontSize(10).font("Helvetica");
+    doc.text(`Total Anggota: ${r.totalAnggota}`);
+    doc.text(`Hadir: ${r.totalHadir}`);
+    doc.text(`Tidak Hadir: ${r.totalAnggota - r.totalHadir}`);
+    doc.text(`Persentase Kehadiran: ${r.totalAnggota > 0 ? Math.round((r.totalHadir / r.totalAnggota) * 100) : 0}%`);
+
+    // ── Footer ──
+    doc.fillColor("#9CA3AF").fontSize(8).font("Helvetica");
+    doc.text(
+      `Dicetak pada ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`,
+      40,
+      750,
+      { align: "center" }
+    );
+
+    doc.end();
+
+    return new Promise((resolve) => {
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+    });
+  }
 }
 
 export const ratService = new RatService();

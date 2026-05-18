@@ -18,6 +18,7 @@ import {
   Copy,
   Printer,
   Pencil,
+  FileDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { FormField } from "@/components/ui/form-field";
-import { api } from "@/lib/api";
+import { api, downloadBlob } from "@/lib/api";
 import { rules, validate, type FieldErrors } from "@/lib/validation";
 import { useToast } from "@/hooks/useToast";
 import { useAuth } from "@/hooks/useAuth";
@@ -558,6 +559,28 @@ export default function RATPage() {
               </DialogHeader>
 
               {/* Status & Actions */}
+              {/* Export Buttons — always visible */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/30"
+                  onClick={() => downloadBlob(`/api/rat/${selectedId}/export/xlsx`, `rat-${detail?.periode}.xlsx`)}
+                >
+                  <FileDown className="w-3 h-3 mr-1" />
+                  XLSX
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
+                  onClick={() => downloadBlob(`/api/rat/${selectedId}/export/pdf`, `rat-${detail?.periode}.pdf`)}
+                >
+                  <FileDown className="w-3 h-3 mr-1" />
+                  PDF
+                </Button>
+              </div>
+
               {isAdmin && (
                 <div className="flex items-center gap-2 flex-wrap">
                   {detail.status === "draft" && (

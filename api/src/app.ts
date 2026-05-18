@@ -22,6 +22,8 @@ import { shuRoute } from "./routes/shu.route.js";
 import { ratRoute } from "./routes/rat.route.js";
 import { userRoute } from "./routes/user.route.js";
 import { searchRoute } from "./routes/search.route.js";
+import { koperasiRoute } from "./routes/koperasi.route.js";
+import { periodeBukuRoute } from "./routes/periode-buku.route.js";
 
 const app = new Hono();
 
@@ -42,6 +44,8 @@ app.route("/api/shu", shuRoute);
 app.route("/api/rat", ratRoute);
 app.route("/api/users", userRoute);
 app.route("/api/search", searchRoute);
+app.route("/api/koperasi", koperasiRoute);
+app.route("/api/periode-buku", periodeBukuRoute);
 
 app.onError(errorHandler);
 

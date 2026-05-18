@@ -214,3 +214,30 @@ export const ratKehadiran = sqliteTable("rat_kehadiran", {
   suratKuasa: integer("surat_kuasa", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
 });
+
+export const koperasi = sqliteTable("koperasi", {
+  id: text("id").primaryKey(),
+  nama: text("nama").notNull(),
+  alamat: text("alamat"),
+  badanHukum: text("badan_hukum"),
+  jenis: text("jenis", { enum: ["ksp", "ksu", "kopdes", "syariah"] }).notNull().default("ksp"),
+  logo: text("logo"),
+  noTelepon: text("no_telepon"),
+  email: text("email"),
+  website: text("website"),
+  kota: text("kota"),
+  provinsi: text("provinsi"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`).$onUpdate(() => sql`(datetime('now'))`).notNull(),
+});
+
+export const periodeBuku = sqliteTable("periode_buku", {
+  id: text("id").primaryKey(),
+  tahun: integer("tahun").notNull(),
+  tanggalMulai: text("tanggal_mulai").notNull(),
+  tanggalSelesai: text("tanggal_selesai").notNull(),
+  status: text("status", { enum: ["buka", "tutup"] }).notNull().default("buka"),
+  keterangan: text("keterangan"),
+  createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
+  updatedAt: text("updated_at").default(sql`(datetime('now'))`).$onUpdate(() => sql`(datetime('now'))`).notNull(),
+});

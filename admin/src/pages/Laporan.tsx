@@ -85,17 +85,28 @@ export default function LaporanPage() {
   const [loading, setLoading] = useState(false);
   const [periodeMulai, setPeriodeMulai] = useState("");
   const [periodeSelesai, setPeriodeSelesai] = useState("");
+  const [nsPeriodeMulai, setNsPeriodeMulai] = useState("");
+  const [nsPeriodeSelesai, setNsPeriodeSelesai] = useState("");
+  const [nPeriodeMulai, setNPeriodeMulai] = useState("");
+  const [nPeriodeSelesai, setNPeriodeSelesai] = useState("");
 
   useEffect(() => {
     fetchAkun();
   }, []);
 
   useEffect(() => {
-    if (activeTab === "neraca-saldo") fetchNeracaSaldo();
+    if (activeTab === "neraca-saldo") fetchNeracaSaldo(nsPeriodeMulai, nsPeriodeSelesai);
     if (activeTab === "laba-rugi") fetchLabaRugi();
-    if (activeTab === "neraca") fetchNeraca();
+    if (activeTab === "neraca") fetchNeraca(nPeriodeMulai, nPeriodeSelesai);
     if (activeTab === "arus-kas") fetchArusKas();
   }, [activeTab]);
+
+  // Auto-fetch buku besar when akun is selected
+  useEffect(() => {
+    if (selectedAkun) {
+      fetchBukuBesar();
+    }
+  }, [selectedAkun]);
 
   const fetchAkun = async () => {
     try {
@@ -121,10 +132,14 @@ export default function LaporanPage() {
     }
   };
 
-  const fetchNeracaSaldo = async () => {
+  const fetchNeracaSaldo = async (tanggalMulai?: string, tanggalSelesai?: string) => {
     setLoading(true);
     try {
-      const res = await api<{ success: boolean; data: { data: NeracaSaldoRow[]; totalDebit: number; totalKredit: number } }>("/api/jurnal/neraca-saldo");
+      const params = new URLSearchParams();
+      if (tanggalMulai) params.set("tanggalMulai", tanggalMulai);
+      if (tanggalSelesai) params.set("tanggalSelesai", tanggalSelesai);
+      const qs = params.toString();
+      const res = await api<{ success: boolean; data: { data: NeracaSaldoRow[]; totalDebit: number; totalKredit: number } }>(`/api/jurnal/neraca-saldo${qs ? `?${qs}` : ""}`);
       setNeracaSaldo(res.data);
     } finally {
       setLoading(false);
@@ -144,10 +159,14 @@ export default function LaporanPage() {
     }
   };
 
-  const fetchNeraca = async () => {
+  const fetchNeraca = async (tanggalMulai?: string, tanggalSelesai?: string) => {
     setLoading(true);
     try {
-      const res = await api<{ success: boolean; data: NeracaData }>("/api/jurnal/neraca");
+      const params = new URLSearchParams();
+      if (tanggalMulai) params.set("tanggalMulai", tanggalMulai);
+      if (tanggalSelesai) params.set("tanggalSelesai", tanggalSelesai);
+      const qs = params.toString();
+      const res = await api<{ success: boolean; data: NeracaData }>(`/api/jurnal/neraca${qs ? `?${qs}` : ""}`);
       setNeraca(res.data);
     } finally {
       setLoading(false);
@@ -255,6 +274,20 @@ export default function LaporanPage() {
         </TabsContent>
 
         <TabsContent value="neraca-saldo" className="space-y-4">
+          <Card className="border border-border shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Filter Periode</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-4">
+              <Input type="date" value={nsPeriodeMulai} onChange={(e) => setNsPeriodeMulai(e.target.value)} className="w-[180px]" />
+              <Input type="date" value={nsPeriodeSelesai} onChange={(e) => setNsPeriodeSelesai(e.target.value)} className="w-[180px]" />
+              <Button onClick={() => fetchNeracaSaldo(nsPeriodeMulai, nsPeriodeSelesai)} disabled={loading}>
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Tampilkan
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card className="border border-border shadow-sm" noHover>
             <CardHeader>
               <CardTitle className="text-base">Neraca Saldo</CardTitle>
@@ -366,6 +399,20 @@ export default function LaporanPage() {
         </TabsContent>
 
         <TabsContent value="neraca" className="space-y-4">
+          <Card className="border border-border shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base">Filter Periode</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-4">
+              <Input type="date" value={nPeriodeMulai} onChange={(e) => setNPeriodeMulai(e.target.value)} className="w-[180px]" />
+              <Input type="date" value={nPeriodeSelesai} onChange={(e) => setNPeriodeSelesai(e.target.value)} className="w-[180px]" />
+              <Button onClick={() => fetchNeraca(nPeriodeMulai, nPeriodeSelesai)} disabled={loading}>
+                {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Tampilkan
+              </Button>
+            </CardContent>
+          </Card>
+
           {neraca && (
             <Card className="border border-border shadow-sm" noHover>
               <CardHeader className="flex flex-row items-center justify-between">

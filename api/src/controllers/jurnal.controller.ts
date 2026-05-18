@@ -38,7 +38,11 @@ export const jurnalController = {
   },
 
   async neracaSaldo(c: Context) {
-    const result = await getNeracaSaldo();
+    const query = c.req.query();
+    const result = await getNeracaSaldo({
+      tanggalMulai: query.tanggalMulai,
+      tanggalSelesai: query.tanggalSelesai,
+    });
     return c.json({ success: true, data: result });
   },
 
@@ -52,7 +56,11 @@ export const jurnalController = {
   },
 
   async neraca(c: Context) {
-    const result = await getNeraca();
+    const query = c.req.query();
+    const result = await getNeraca({
+      tanggalMulai: query.tanggalMulai,
+      tanggalSelesai: query.tanggalSelesai,
+    });
     return c.json({ success: true, data: result });
   },
 

@@ -110,4 +110,23 @@ export const ratController = {
     const result = await ratService.getAnggotaAktif();
     return c.json({ success: true, ...result });
   },
+
+  // ── Export ──
+  async exportXLSX(c: Context) {
+    const id = c.req.param("id")!;
+    const buffer = await ratService.exportXLSX(id);
+    const uint8 = new Uint8Array(buffer);
+    c.header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    c.header("Content-Disposition", `attachment; filename=rat-${id}.xlsx`);
+    return c.newResponse(uint8, 200);
+  },
+
+  async exportPDF(c: Context) {
+    const id = c.req.param("id")!;
+    const buffer = await ratService.exportPDF(id);
+    const uint8 = new Uint8Array(buffer);
+    c.header("Content-Type", "application/pdf");
+    c.header("Content-Disposition", `attachment; filename=rat-${id}.pdf`);
+    return c.newResponse(uint8, 200);
+  },
 };

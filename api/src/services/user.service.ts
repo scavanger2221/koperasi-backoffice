@@ -7,7 +7,9 @@ import { users } from "../../database/schema/index.js";
 import type { CreateUserInput, UpdateUserInput } from "@koperasi/shared/schemas";
 
 export class UserService {
-  async list() {
+  async list({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}) {
+    const offset = (page - 1) * limit;
+
     const data = await db
       .select({
         id: users.id,
@@ -19,9 +21,13 @@ export class UserService {
         createdAt: users.createdAt,
       })
       .from(users)
-      .orderBy(desc(users.createdAt));
+      .orderBy(desc(users.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-    return { data };
+    const total = await db.$count(users);
+
+    return { data, meta: { page, limit, total } };
   }
 
   async getById(id: string) {

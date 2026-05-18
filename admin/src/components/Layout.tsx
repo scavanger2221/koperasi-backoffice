@@ -56,6 +56,8 @@ const navGroups: { label: string | null; items: { label: string; icon: React.Ele
   { label: "Manajemen", items: [
     { label: "Audit Log", icon: ClipboardList, path: "/audit" },
     { label: "Pengguna", icon: UserCog, path: "/users" },
+    { label: "Pengaturan", icon: Building2, path: "/pengaturan" },
+    { label: "Periode Buku", icon: BookOpen, path: "/periode-buku" },
   ]},
 ];
 
