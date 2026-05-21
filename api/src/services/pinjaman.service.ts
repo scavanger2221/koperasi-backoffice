@@ -1,4 +1,4 @@
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import crypto from "crypto";
 import { db } from "../lib/db.js";
@@ -18,8 +18,13 @@ export class PinjamanService {
     }
 
     const data = await db
-      .select()
+      .select({
+        pinjaman: pinjaman,
+        anggotaNama: anggota.nama,
+        anggotaNo: anggota.noAnggota,
+      })
       .from(pinjaman)
+      .leftJoin(anggota, eq(pinjaman.anggotaId, anggota.id))
       .where(conditions)
       .orderBy(desc(pinjaman.createdAt))
       .limit(limit)
@@ -27,11 +32,10 @@ export class PinjamanService {
 
     const total = await db.$count(pinjaman, conditions);
 
-    const result = [];
-    for (const p of data) {
-      const a = await db.select().from(anggota).where(eq(anggota.id, p.anggotaId)).get();
-      result.push({ ...p, anggota: a ? { nama: a.nama, noAnggota: a.noAnggota } : null });
-    }
+    const result = data.map((row) => ({
+      ...row.pinjaman,
+      anggota: row.anggotaNama ? { nama: row.anggotaNama, noAnggota: row.anggotaNo } : null,
+    }));
 
     return { data: result, meta: { page, limit, total } };
   }
@@ -178,6 +182,58 @@ export class PinjamanService {
     return 4; // Macet
   }
 
+  async getKolektibilitasMap(activePinjaman: typeof pinjaman.$inferSelect[]) {
+    if (activePinjaman.length === 0) return {};
+    const pinjamanIds = activePinjaman.map((p) => p.id);
+    const allAngsuran = await db
+      .select()
+      .from(angsuran)
+      .where(inArray(angsuran.pinjamanId, pinjamanIds));
+
+    const angsuranMap: Record<string, typeof angsuran.$inferSelect[]> = {};
+    for (const a of allAngsuran) {
+      if (!angsuranMap[a.pinjamanId]) angsuranMap[a.pinjamanId] = [];
+      angsuranMap[a.pinjamanId].push(a);
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const kolMap: Record<string, number> = {};
+
+    for (const p of activePinjaman) {
+      const angsuranList = angsuranMap[p.id] || [];
+      let maxTelat = 0;
+
+      for (const a of angsuranList) {
+        if (a.status === "lunas" || a.status === "telat") {
+          if (a.tanggalBayar) {
+            const due = new Date(a.tanggalJatuhTempo);
+            due.setHours(0, 0, 0, 0);
+            const bayar = new Date(a.tanggalBayar);
+            bayar.setHours(0, 0, 0, 0);
+            const diff = Math.floor((bayar.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+            if (diff > maxTelat) maxTelat = diff;
+          }
+        } else if (a.status === "belum_lunas") {
+          const due = new Date(a.tanggalJatuhTempo);
+          due.setHours(0, 0, 0, 0);
+          const diff = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
+          if (diff > maxTelat) maxTelat = diff;
+        }
+      }
+
+      let kol = 1;
+      if (maxTelat > 180) kol = 4;
+      else if (maxTelat > 90) kol = 3;
+      else if (maxTelat > 0) kol = 2;
+
+      kolMap[p.id] = kol;
+    }
+
+    return kolMap;
+  }
+
   async cekDanUpdateDenda() {
     const today = new Date().toISOString().split("T")[0];
     const unpaid = await db
@@ -198,10 +254,13 @@ export class PinjamanService {
 
     // Update kolektibilitas → macet jika >90 hari
     const activePinjaman = await db.select().from(pinjaman).where(eq(pinjaman.status, "aktif"));
-    for (const p of activePinjaman) {
-      const kol = await this.getKolektibilitas(p.id);
-      if (kol >= 4) {
-        await db.update(pinjaman).set({ status: "macet" }).where(eq(pinjaman.id, p.id));
+    if (activePinjaman.length > 0) {
+      const kolMap = await this.getKolektibilitasMap(activePinjaman);
+      for (const p of activePinjaman) {
+        const kol = kolMap[p.id] ?? 1;
+        if (kol >= 4) {
+          await db.update(pinjaman).set({ status: "macet" }).where(eq(pinjaman.id, p.id));
+        }
       }
     }
 
@@ -268,9 +327,11 @@ export class PinjamanService {
   async getKolektibilitasSummary() {
     const allPinjaman = await db.select().from(pinjaman).where(eq(pinjaman.status, "aktif"));
     const summary = { 1: 0, 2: 0, 3: 0, 4: 0 };
-    for (const p of allPinjaman) {
-      const kol = await this.getKolektibilitas(p.id);
-      summary[kol as keyof typeof summary]++;
+    if (allPinjaman.length === 0) return summary;
+
+    const kolMap = await this.getKolektibilitasMap(allPinjaman);
+    for (const val of Object.values(kolMap)) {
+      summary[val as keyof typeof summary]++;
     }
     return summary;
   }

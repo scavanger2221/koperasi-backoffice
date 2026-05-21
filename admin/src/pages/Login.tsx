@@ -44,27 +44,28 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-4">
-      <div className="w-full max-w-[420px] bg-white dark:bg-gray-900 rounded-2xl border border-border shadow-sm p-8">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="bg-aurora"></div>
+      <div className="w-full max-w-[420px] bg-card/85 backdrop-blur-xl rounded-2xl border border-border shadow-2xl p-8 animate-fade-in">
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center mb-4">
-            <Building2 className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mb-4 shadow-md">
+            <Building2 className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Koperasi Backoffice</h1>
+          <h1 className="text-xl font-bold text-foreground">Koperasi Backoffice</h1>
           <p className="text-sm text-muted-foreground mt-1">Masuk ke dashboard admin</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           {error && (
-            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 px-3 py-2.5 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 px-3 py-2.5 rounded-lg border border-destructive/20">
               <AlertCircle className="w-4 h-4 shrink-0" />
               {error}
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-gray-900 dark:text-white">
-              Email <span className="text-red-500">*</span>
+            <label htmlFor="email" className="text-sm font-medium text-foreground">
+              Email <span className="text-destructive">*</span>
             </label>
             <input
               id="email"
@@ -74,14 +75,14 @@ export default function Login() {
                 setEmail(e.target.value);
                 setErrors((prev) => ({ ...prev, email: "" }));
               }}
-              className={`w-full h-10 px-3 rounded-lg border bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors ${
+              className={`w-full h-10 px-3 rounded-lg border bg-background/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors ${
                 errors.email
-                  ? "border-red-400 dark:border-red-500"
-                  : "border-input focus:border-emerald-500"
+                  ? "border-destructive focus:border-destructive"
+                  : "border-input focus:border-primary"
               }`}
             />
             {errors.email && (
-              <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+              <p className="flex items-center gap-1 text-xs text-destructive mt-1">
                 <AlertCircle className="w-3 h-3" />
                 {errors.email}
               </p>
@@ -89,8 +90,8 @@ export default function Login() {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="password" className="text-sm font-medium text-gray-900 dark:text-white">
-              Password <span className="text-red-500">*</span>
+            <label htmlFor="password" className="text-sm font-medium text-foreground">
+              Password <span className="text-destructive">*</span>
             </label>
             <input
               id="password"
@@ -100,14 +101,14 @@ export default function Login() {
                 setPassword(e.target.value);
                 setErrors((prev) => ({ ...prev, password: "" }));
               }}
-              className={`w-full h-10 px-3 rounded-lg border bg-white dark:bg-gray-950 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors ${
+              className={`w-full h-10 px-3 rounded-lg border bg-background/50 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors ${
                 errors.password
-                  ? "border-red-400 dark:border-red-500"
-                  : "border-input focus:border-emerald-500"
+                  ? "border-destructive focus:border-destructive"
+                  : "border-input focus:border-primary"
               }`}
             />
             {errors.password && (
-              <p className="flex items-center gap-1 text-xs text-red-600 mt-1">
+              <p className="flex items-center gap-1 text-xs text-destructive mt-1">
                 <AlertCircle className="w-3 h-3" />
                 {errors.password}
               </p>
@@ -117,7 +118,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-60 flex items-center justify-center"
+            className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-bold rounded-lg transition-all disabled:opacity-60 flex items-center justify-center shadow-md hover:shadow-lg active:scale-[0.98]"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Masuk"}
           </button>

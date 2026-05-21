@@ -70,10 +70,10 @@ interface AnggotaItem {
 const statusConfig: Record<string, { label: string; className: string }> = {
   diajukan: { label: "Diajukan", className: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900" },
   disetujui: { label: "Disetujui", className: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900" },
-  aktif: { label: "Aktif", className: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900" },
-  lunas: { label: "Lunas", className: "bg-gray-100 text-gray-800 border-gray-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700" },
-  ditolak: { label: "Ditolak", className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900" },
-  macet: { label: "Macet", className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900" },
+  aktif: { label: "Aktif", className: "bg-primary/15 text-primary border-primary/30" },
+  lunas: { label: "Lunas", className: "bg-muted text-muted-foreground border-border" },
+  ditolak: { label: "Ditolak", className: "bg-destructive/15 text-destructive border-destructive/30" },
+  macet: { label: "Macet", className: "bg-destructive/15 text-destructive border-destructive/30" },
 };
 
 export default function PinjamanPage() {
@@ -216,16 +216,16 @@ export default function PinjamanPage() {
             if (!v) setErrors({});
           }}>
             <DialogTrigger asChild>
-              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm h-9">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm h-9">
                 <Plus className="w-4 h-4 mr-1" />
-                <span className="hidden sm:inline">Tambah Pinjaman</span>
+                <span className="hidden sm:inline">Ajukan Pinjaman</span>
                 <span className="sm:hidden">Tambah</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="border-0 shadow-xl max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-lg flex items-center gap-2">
-                  <HandCoins className="w-5 h-5 text-emerald-600" />
+                  <HandCoins className="w-5 h-5 text-primary" />
                   Tambah Pinjaman Baru
                 </DialogTitle>
               </DialogHeader>
@@ -381,13 +381,13 @@ export default function PinjamanPage() {
                   </Button>
                   <Button
                     type="submit"
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
                     disabled={createMutation.isPending || !form.anggotaId || !form.jumlah}
                   >
                     {createMutation.isPending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      "Simpan"
+                      "Ajukan Pinjaman"
                     )}
                   </Button>
                 </div>
@@ -459,7 +459,7 @@ export default function PinjamanPage() {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="w-8 h-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                  className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
                                   onClick={() => approveMutation.mutate(p.id)}
                                 >
                                   <CheckCircle className="w-3.5 h-3.5" />
@@ -533,7 +533,7 @@ export default function PinjamanPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1 h-8 text-xs text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/30"
+                            className="flex-1 h-8 text-xs text-primary border-primary/30 hover:bg-primary/10"
                             onClick={() => approveMutation.mutate(p.id)}
                           >
                             <CheckCircle className="w-3 h-3 mr-1" />
@@ -608,7 +608,7 @@ export default function PinjamanPage() {
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div
-                      className="h-full bg-emerald-600 rounded-full transition-all"
+                      className="h-full bg-primary rounded-full transition-all"
                       style={{
                         width: `${(detailQuery.data.angsuran.filter((a) => a.status === "lunas").length / detailQuery.data.angsuran.length) * 100}%`,
                       }}
@@ -641,9 +641,9 @@ export default function PinjamanPage() {
                           <div className="flex items-center gap-2.5">
                             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
                               a.status === "lunas"
-                                ? "bg-emerald-600 text-white"
+                                ? "bg-primary text-primary-foreground"
                                 : isLate
-                                ? "bg-red-600 text-white"
+                                ? "bg-destructive text-destructive-foreground"
                                 : "bg-muted text-muted-foreground"
                             }`}>
                               {a.status === "lunas" ? <Check className="w-3 h-3" /> : a.angsuranKe}
@@ -658,7 +658,7 @@ export default function PinjamanPage() {
                               <p className="text-[10px] text-muted-foreground">
                                 Jatuh tempo: {new Date(a.tanggalJatuhTempo).toLocaleDateString("id-ID")}
                                 {a.tanggalBayar && (
-                                  <span className="text-emerald-400 ml-1">
+                                  <span className="text-primary ml-1">
                                     · Dibayar: {new Date(a.tanggalBayar).toLocaleDateString("id-ID")}
                                   </span>
                                 )}
@@ -668,7 +668,7 @@ export default function PinjamanPage() {
                           {a.status === "belum_lunas" && (
                             <Button
                               size="sm"
-                              className="h-7 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                              className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
                               onClick={() => handleBayar(detailQuery.data.id)}
                               disabled={bayarMutation.isPending}
                             >
@@ -676,7 +676,7 @@ export default function PinjamanPage() {
                             </Button>
                           )}
                           {a.status === "lunas" && (
-                            <span className="text-[10px] text-emerald-400 font-medium">Lunas</span>
+                            <span className="text-[10px] text-primary font-medium">Lunas</span>
                           )}
                         </div>
                       );

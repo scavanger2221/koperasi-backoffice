@@ -7,20 +7,30 @@ export class DashboardService {
     const totalAnggota = await db.$count(anggota, eq(anggota.status, "aktif"));
     const totalPinjamanAktif = await db.$count(pinjaman, eq(pinjaman.status, "aktif"));
 
-    const simpananRows = await db.select().from(simpanan);
-    let totalSimpanan = 0;
-    for (const s of simpananRows) totalSimpanan += Number(s.jumlah);
+    const [simpananSum] = await db
+      .select({
+        total: sql<string>`SUM(CAST(${simpanan.jumlah} AS REAL))`,
+      })
+      .from(simpanan);
+    const totalSimpanan = Number(simpananSum?.total ?? 0);
 
-    const pinjamanRows = await db.select().from(pinjaman).where(eq(pinjaman.status, "aktif"));
-    let totalPinjaman = 0;
-    for (const p of pinjamanRows) totalPinjaman += Number(p.jumlah);
+    const [pinjamanSum] = await db
+      .select({
+        total: sql<string>`SUM(CAST(${pinjaman.jumlah} AS REAL))`,
+      })
+      .from(pinjaman)
+      .where(eq(pinjaman.status, "aktif"));
+    const totalPinjaman = Number(pinjamanSum?.total ?? 0);
 
-    const angsuranRows = await db
-      .select()
+    const [angsuranSum] = await db
+      .select({
+        total: sql<string>`SUM(CAST(${angsuran.totalBayar} AS REAL))`,
+        count: sql<number>`COUNT(*)`,
+      })
       .from(angsuran)
       .where(eq(angsuran.status, "belum_lunas"));
-    let totalTunggakan = 0;
-    for (const a of angsuranRows) totalTunggakan += Number(a.totalBayar);
+    const totalTunggakan = Number(angsuranSum?.total ?? 0);
+    const jumlahAngsuranTunggakan = Number(angsuranSum?.count ?? 0);
 
     return {
       totalAnggota,
@@ -28,7 +38,7 @@ export class DashboardService {
       totalPinjamanAktif,
       totalPinjaman,
       totalTunggakan,
-      jumlahAngsuranTunggakan: angsuranRows.length,
+      jumlahAngsuranTunggakan,
     };
   }
 

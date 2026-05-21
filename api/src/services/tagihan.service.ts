@@ -13,8 +13,13 @@ export class TagihanService {
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     const data = await db
-      .select()
+      .select({
+        tagihanSimpanan: tagihanSimpanan,
+        anggotaNama: anggota.nama,
+        anggotaNo: anggota.noAnggota,
+      })
       .from(tagihanSimpanan)
+      .leftJoin(anggota, eq(tagihanSimpanan.anggotaId, anggota.id))
       .where(where)
       .orderBy(desc(tagihanSimpanan.createdAt))
       .limit(limit)
@@ -22,11 +27,10 @@ export class TagihanService {
 
     const total = await db.$count(tagihanSimpanan, where);
 
-    const result = [];
-    for (const t of data) {
-      const a = await db.select().from(anggota).where(eq(anggota.id, t.anggotaId)).get();
-      result.push({ ...t, anggota: a ? { nama: a.nama, noAnggota: a.noAnggota } : null });
-    }
+    const result = data.map((row) => ({
+      ...row.tagihanSimpanan,
+      anggota: row.anggotaNama ? { nama: row.anggotaNama, noAnggota: row.anggotaNo } : null,
+    }));
 
     return { data: result, meta: { page, limit, total } };
   }
@@ -38,20 +42,26 @@ export class TagihanService {
     let created = 0;
     let skipped = 0;
 
-    for (const m of members) {
-      // Check if already exists for this periode
-      const existing = await db
-        .select()
-        .from(tagihanSimpanan)
-        .where(and(eq(tagihanSimpanan.anggotaId, m.id), eq(tagihanSimpanan.periode, periode)))
-        .get();
+    if (members.length === 0) {
+      return { created, skipped, periode };
+    }
 
-      if (existing) {
+    // Get all existing tagihan for this period in one query
+    const existing = await db
+      .select({ anggotaId: tagihanSimpanan.anggotaId })
+      .from(tagihanSimpanan)
+      .where(eq(tagihanSimpanan.periode, periode));
+
+    const existingAnggotaIds = new Set(existing.map((e) => e.anggotaId));
+
+    const toInsert = [];
+    for (const m of members) {
+      if (existingAnggotaIds.has(m.id)) {
         skipped++;
         continue;
       }
 
-      await db.insert(tagihanSimpanan).values({
+      toInsert.push({
         id: crypto.randomUUID(),
         anggotaId: m.id,
         periode,
@@ -60,6 +70,10 @@ export class TagihanService {
         status: "belum_bayar",
       });
       created++;
+    }
+
+    if (toInsert.length > 0) {
+      await db.insert(tagihanSimpanan).values(toInsert);
     }
 
     return { created, skipped, periode };

@@ -90,9 +90,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
+      <div className="bg-aurora"></div>
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border">
+      <header className="sticky top-0 z-50 glass-header">
         <div className="flex items-center justify-between h-16 px-4 lg:px-6">
           {/* Left: Logo + mobile toggle */}
           <div className="flex items-center gap-3">
@@ -102,9 +103,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             >
               <Menu className="w-5 h-5 text-muted-foreground" />
             </button>
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm">
-                <Building2 className="w-4 h-4 text-white" />
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
+                <Building2 className="w-4 h-4 text-primary-foreground" />
               </div>
               <span className="font-bold text-foreground hidden sm:block">Koperasi</span>
             </Link>
@@ -125,7 +126,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 hover:bg-muted rounded-xl transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground text-sm font-bold shadow-sm">
                   {user?.nama?.charAt(0)?.toUpperCase() || "A"}
                 </div>
                 <div className="hidden sm:block text-left">
@@ -138,8 +139,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {userMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-64 bg-card rounded-xl shadow-lg border border-border z-50 overflow-hidden">
-                    <div className="p-4 border-b border-border">
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-card rounded-xl shadow-xl border border-border z-50 overflow-hidden animate-slide-up">
+                    <div className="p-4 border-b border-border bg-muted/30">
                       <p className="font-semibold text-foreground">{user?.nama}</p>
                       <p className="text-sm text-muted-foreground">{user?.email}</p>
                     </div>
@@ -213,13 +214,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           to={item.path}
                           onClick={() => setSidebarOpen(false)}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-2 text-sm font-medium transition-all border-l-[3px]",
+                            "flex items-center gap-3 px-3 py-2 text-sm font-medium transition-all border-l-[3px] rounded-r-lg",
                             active
-                              ? "border-l-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/15 text-emerald-700 dark:text-emerald-400"
+                              ? "border-l-primary bg-primary/10 text-primary"
                               : "border-l-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
                           )}
                         >
-                          <item.icon className={cn("w-[18px] h-[18px]", active ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")} />
+                          <item.icon className={cn("w-[18px] h-[18px]", active ? "text-primary" : "text-muted-foreground")} />
                           {item.label}
                         </Link>
                       );
@@ -267,14 +268,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-colors",
                   active
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-muted-foreground"
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <item.icon className={cn("w-5 h-5", active && "stroke-[2.5]")} />
+                <item.icon className={cn("w-5 h-5 transition-transform", active && "stroke-[2.5] scale-110")} />
                 <span className="text-[10px] font-medium">{item.label}</span>
                 {active && (
-                  <div className="absolute bottom-1 w-1 h-1 rounded-full bg-emerald-500" />
+                  <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary" />
                 )}
               </Link>
             );
@@ -310,11 +311,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
                             active
-                              ? "bg-emerald-50/80 dark:bg-emerald-950/15 text-emerald-700 dark:text-emerald-400"
-                              : "text-muted-foreground hover:bg-muted"
+                              ? "bg-primary/10 text-primary"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
                           )}
                         >
-                          <item.icon className={cn("w-[18px] h-[18px]", active ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")} />
+                          <item.icon className={cn("w-[18px] h-[18px]", active ? "text-primary" : "text-muted-foreground")} />
                           {item.label}
                         </Link>
                       );
@@ -332,7 +333,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <DialogContent className="max-w-sm border-0 shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-lg flex items-center gap-2">
-              <Lock className="w-5 h-5 text-emerald-600" />
+              <Lock className="w-5 h-5 text-primary" />
               Ganti Password
             </DialogTitle>
           </DialogHeader>
@@ -356,7 +357,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => { setPasswordOpen(false); setPwErrors({}); setPwForm({ passwordLama: "", passwordBaru: "" }); }}>Batal</Button>
               <Button
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 disabled={pwLoading}
                 onClick={async () => {
                   const errs = validate(pwForm, {

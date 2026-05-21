@@ -18,8 +18,13 @@ export class SimpananService {
     }
 
     const data = await db
-      .select()
+      .select({
+        simpanan: simpanan,
+        anggotaNama: anggota.nama,
+        anggotaNo: anggota.noAnggota,
+      })
       .from(simpanan)
+      .leftJoin(anggota, eq(simpanan.anggotaId, anggota.id))
       .where(conditions)
       .orderBy(sql`${simpanan.createdAt} desc`)
       .limit(limit)
@@ -27,12 +32,10 @@ export class SimpananService {
 
     const total = await db.$count(simpanan, conditions);
 
-    // Attach anggota info
-    const result = [];
-    for (const s of data) {
-      const a = await db.select().from(anggota).where(eq(anggota.id, s.anggotaId)).get();
-      result.push({ ...s, anggota: a ? { nama: a.nama, noAnggota: a.noAnggota } : null });
-    }
+    const result = data.map((row) => ({
+      ...row.simpanan,
+      anggota: row.anggotaNama ? { nama: row.anggotaNama, noAnggota: row.anggotaNo } : null,
+    }));
 
     return { data: result, meta: { page, limit, total } };
   }

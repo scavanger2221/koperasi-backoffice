@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { formatRupiah } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface RingkasanData {
   totalAnggota: number;
@@ -70,7 +71,6 @@ export default function Dashboard() {
   });
 
   const r = ringkasan?.data;
-
   const stats = [
     {
       label: "Anggota Aktif",
@@ -78,6 +78,7 @@ export default function Dashboard() {
       icon: Users,
       iconColor: "text-blue-600 dark:text-blue-400",
       iconBg: "bg-blue-100 dark:bg-blue-950/30",
+      glow: "bg-blue-500",
     },
     {
       label: "Total Simpanan",
@@ -85,6 +86,7 @@ export default function Dashboard() {
       icon: Wallet,
       iconColor: "text-emerald-600 dark:text-emerald-400",
       iconBg: "bg-emerald-100 dark:bg-emerald-950/30",
+      glow: "bg-emerald-500",
     },
     {
       label: "Pinjaman Aktif",
@@ -93,6 +95,7 @@ export default function Dashboard() {
       icon: HandCoins,
       iconColor: "text-amber-600 dark:text-amber-400",
       iconBg: "bg-amber-100 dark:bg-amber-950/30",
+      glow: "bg-amber-500",
     },
     {
       label: "Tunggakan",
@@ -101,11 +104,11 @@ export default function Dashboard() {
       icon: AlertTriangle,
       iconColor: "text-red-600 dark:text-red-400",
       iconBg: "bg-red-100 dark:bg-red-950/30",
+      glow: "bg-red-500",
     },
   ];
 
   const chartData = simpananBulanan?.data ?? [];
-  const maxVal = chartData.length > 0 ? Math.max(...chartData.map((d) => d.totalJuta)) : 1;
 
   const pinjamanStatusList = [
     { label: "Diajukan", count: pinjamanStatus?.data.diajukan ?? 0, total: pinjamanStatus?.data.total ?? 1, color: "bg-amber-400", text: "text-amber-700 dark:text-amber-400" },
@@ -167,12 +170,12 @@ export default function Dashboard() {
               <Link
                 key={a.path}
                 to={a.path}
-                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card border border-border/60 hover:border-border hover:shadow-sm active:scale-95 transition-all"
+                className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-card border border-border/60 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md hover:-translate-y-0.5 active:scale-95 transition-all"
               >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${a.color}`}>
-                  <a.icon className="w-[18px] h-[18px]" />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${a.color} shadow-sm`}>
+                  <a.icon className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-medium text-foreground text-center leading-tight">{a.label}</span>
+                <span className="text-[11px] font-semibold text-foreground text-center leading-tight mt-1">{a.label}</span>
               </Link>
             ))}
           </div>
@@ -188,20 +191,21 @@ export default function Dashboard() {
           {/* Stats Grid */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {stats.map((s) => (
-              <Card key={s.label} className="border border-border shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              <Card key={s.label} className="relative overflow-hidden border border-border shadow-sm card-hover">
+                <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-[40px] opacity-15 dark:opacity-20 -mr-10 -mt-10 pointer-events-none ${s.glow}`} />
+                <CardHeader className="relative flex flex-row items-center justify-between pb-2 z-10">
+                  <CardTitle className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                     {s.label}
                   </CardTitle>
-                  <div className={`w-10 h-10 rounded-full ${s.iconBg} flex items-center justify-center`}>
+                  <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center shadow-sm`}>
                     <s.icon className={`w-5 h-5 ${s.iconColor}`} />
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-foreground">{s.value}</div>
+                <CardContent className="relative z-10">
+                  <div className="text-2xl font-black tracking-tight text-foreground">{s.value}</div>
                   {s.sub && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                      <Activity className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <div className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground font-medium">
+                      <Activity className="w-3 h-3 text-primary" />
                       {s.sub}
                     </div>
                   )}
@@ -224,32 +228,39 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 {chartData.length === 0 ? (
-                  <div className="flex items-center justify-center h-56 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-center h-64 text-sm text-muted-foreground">
                     Belum ada data simpanan
                   </div>
                 ) : (
-                  <div className="relative h-56">
-                    <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                      {[0, 1, 2, 3, 4].map((i) => (
-                        <div key={i} className="border-t border-gray-100 dark:border-gray-800 w-full" />
-                      ))}
-                    </div>
-                    <div className="absolute inset-0 flex items-end justify-between gap-2 px-2">
-                      {chartData.map((d) => (
-                        <div key={d.label} className="flex-1 flex flex-col items-center gap-2 group">
-                          <div className="relative w-full flex justify-center">
-                            <span className="absolute -top-5 text-[10px] font-medium text-muted-foreground">
-                              {d.totalJuta}jt
-                            </span>
-                            <div
-                              className="w-full max-w-[48px] bg-gradient-to-t from-emerald-500 to-teal-400 rounded-t-lg transition-all duration-300 group-hover:from-emerald-600 group-hover:to-teal-500"
-                              style={{ height: `${Math.max((d.totalJuta / maxVal) * 180, 4)}px` }}
-                            />
-                          </div>
-                          <span className="text-[11px] text-muted-foreground font-medium">{d.month}</span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="h-64 w-full mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-border/50" />
+                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'currentColor' }} className="text-muted-foreground" dy={10} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'currentColor' }} className="text-muted-foreground" dx={-10} />
+                        <Tooltip
+                          cursor={{ fill: 'currentColor', className: 'text-muted/20 dark:text-muted/10' }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              return (
+                                <div className="bg-card border border-border shadow-lg rounded-xl p-3">
+                                  <p className="text-xs text-muted-foreground font-medium mb-1">{payload[0].payload.label}</p>
+                                  <p className="text-sm font-bold text-foreground">Rp {payload[0].value} Juta</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar
+                          dataKey="totalJuta"
+                          fill="var(--color-primary)"
+                          radius={[6, 6, 0, 0]}
+                          className="fill-primary"
+                          animationDuration={1500}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 )}
               </CardContent>
@@ -282,22 +293,22 @@ export default function Dashboard() {
               <Card className="border border-border shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Rasio Kesehatan</p>
-                      <p className="text-lg font-bold text-foreground">Sehat</p>
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Rasio Kesehatan</p>
+                      <p className="text-xl font-black text-foreground tracking-tight">Sehat</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-border">
                     <div>
-                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Likuiditas</p>
-                      <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{(r?.totalPinjaman ?? 0) > 0 ? `${Math.round((r!.totalSimpanan / r!.totalPinjaman) * 100)}%` : "N/A"}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Likuiditas</p>
+                      <p className="text-sm font-black text-primary">{(r?.totalPinjaman ?? 0) > 0 ? `${Math.round((r!.totalSimpanan / r!.totalPinjaman) * 100)}%` : "N/A"}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-muted-foreground uppercase font-medium">Solvabilitas</p>
-                      <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{(r?.totalPinjaman ?? 0) > 0 ? `${Math.round(((r!.totalSimpanan + r!.totalPinjaman) / r!.totalPinjaman) * 100)}%` : "N/A"}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Solvabilitas</p>
+                      <p className="text-sm font-black text-primary">{(r?.totalPinjaman ?? 0) > 0 ? `${Math.round(((r!.totalSimpanan + r!.totalPinjaman) / r!.totalPinjaman) * 100)}%` : "N/A"}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -330,12 +341,12 @@ export default function Dashboard() {
                     </thead>
                     <tbody>
                       {recentActivity.map((row, i) => (
-                        <tr key={i} className="border-b border-border/80 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                          <td className="py-3 px-3 font-medium text-foreground">{row.act}</td>
+                        <tr key={i} className="border-b border-border/50 hover:bg-muted/40 transition-colors group">
+                          <td className="py-3 px-3 font-medium text-foreground group-hover:text-primary transition-colors">{row.act}</td>
                           <td className="py-3 px-3 text-muted-foreground">{row.user}</td>
-                          <td className="py-3 px-3 text-right font-medium text-foreground">{formatRupiah(row.amt)}</td>
+                          <td className="py-3 px-3 text-right font-semibold text-foreground">{formatRupiah(row.amt)}</td>
                           <td className="py-3 px-3">
-                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${row.statusColor}`}>
+                            <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md ${row.statusColor}`}>
                               {row.status}
                             </span>
                           </td>

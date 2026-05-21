@@ -196,7 +196,7 @@ export default function LaporanPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-5 print:hidden">
           <TabsTrigger value="buku-besar"><BookOpen className="w-4 h-4 mr-2" />Buku Besar</TabsTrigger>
           <TabsTrigger value="neraca-saldo"><Scale className="w-4 h-4 mr-2" />Neraca Saldo</TabsTrigger>
           <TabsTrigger value="laba-rugi"><TrendingUp className="w-4 h-4 mr-2" />Laba Rugi</TabsTrigger>
@@ -205,7 +205,7 @@ export default function LaporanPage() {
         </TabsList>
 
         <TabsContent value="buku-besar" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-border shadow-sm print:hidden">
             <CardHeader>
               <CardTitle className="text-base">Filter Buku Besar</CardTitle>
             </CardHeader>
@@ -254,12 +254,12 @@ export default function LaporanPage() {
                     <tbody>
                       {bukuBesar.data.map((row) => (
                         <tr key={row.id} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
-                          <td className="py-3 px-3">{row.tanggal}</td>
-                          <td className="py-3 px-3 font-mono text-xs">{row.noJurnal}</td>
-                          <td className="py-3 px-3">{row.keterangan}</td>
-                          <td className="py-3 px-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{Number(row.debit) > 0 ? formatRupiah(Number(row.debit)) : "-"}</td>
-                          <td className="py-3 px-3 text-right font-medium text-red-600 dark:text-red-400">{Number(row.kredit) > 0 ? formatRupiah(Number(row.kredit)) : "-"}</td>
-                          <td className="py-3 px-3 text-right font-bold text-foreground">{formatRupiah(row.saldo)}</td>
+                          <td className="py-2 px-3">{row.tanggal}</td>
+                          <td className="py-2 px-3 font-mono text-xs">{row.noJurnal}</td>
+                          <td className="py-2 px-3">{row.keterangan}</td>
+                          <td className="py-2 px-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{Number(row.debit) > 0 ? formatRupiah(Number(row.debit)) : "-"}</td>
+                          <td className="py-2 px-3 text-right font-medium text-red-600 dark:text-red-400">{Number(row.kredit) > 0 ? formatRupiah(Number(row.kredit)) : "-"}</td>
+                          <td className="py-2 px-3 text-right font-bold text-foreground">{formatRupiah(row.saldo)}</td>
                         </tr>
                       ))}
                       {bukuBesar.data.length === 0 && (
@@ -274,7 +274,7 @@ export default function LaporanPage() {
         </TabsContent>
 
         <TabsContent value="neraca-saldo" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-border shadow-sm print:hidden">
             <CardHeader>
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>
@@ -310,19 +310,19 @@ export default function LaporanPage() {
                     <tbody>
                       {neracaSaldo.data.map((row) => (
                         <tr key={row.akun.id} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
-                          <td className="py-3 px-3 font-mono text-xs">{row.akun.kode}</td>
-                          <td className="py-3 px-3">{row.akun.nama}</td>
-                          <td className="py-3 px-3 capitalize">{row.akun.tipe}</td>
-                          <td className="py-3 px-3 text-right font-medium text-foreground">{formatRupiah(row.debit)}</td>
-                          <td className="py-3 px-3 text-right font-medium text-foreground">{formatRupiah(row.kredit)}</td>
-                          <td className="py-3 px-3 text-right font-bold text-foreground">{formatRupiah(row.saldo)}</td>
+                          <td className="py-2 px-3 font-mono text-xs">{row.akun.kode}</td>
+                          <td className="py-2 px-3">{row.akun.nama}</td>
+                          <td className="py-2 px-3 capitalize">{row.akun.tipe}</td>
+                          <td className="py-2 px-3 text-right font-medium text-foreground">{formatRupiah(row.debit)}</td>
+                          <td className="py-2 px-3 text-right font-medium text-foreground">{formatRupiah(row.kredit)}</td>
+                          <td className="py-2 px-3 text-right font-bold text-foreground">{formatRupiah(row.saldo)}</td>
                         </tr>
                       ))}
-                      <tr className="border-t-2 border-foreground font-semibold">
-                        <td colSpan={3} className="py-3 px-3 text-foreground">Total</td>
-                        <td className="py-3 px-3 text-right text-foreground">{formatRupiah(neracaSaldo.totalDebit)}</td>
-                        <td className="py-3 px-3 text-right text-foreground">{formatRupiah(neracaSaldo.totalKredit)}</td>
-                        <td className="py-3 px-3 text-right text-foreground">-</td>
+                      <tr className="border-t-2 border-foreground font-bold">
+                        <td colSpan={3} className="py-2 px-3 text-foreground">Total</td>
+                        <td className="py-2 px-3 text-right text-foreground">{formatRupiah(neracaSaldo.totalDebit)}</td>
+                        <td className="py-2 px-3 text-right text-foreground">{formatRupiah(neracaSaldo.totalKredit)}</td>
+                        <td className="py-2 px-3 text-right text-foreground">-</td>
                       </tr>
                     </tbody>
                   </table>
@@ -333,7 +333,7 @@ export default function LaporanPage() {
         </TabsContent>
 
         <TabsContent value="laba-rugi" className="space-y-4">
-          <Card className="border border-border shadow-sm" noHover>
+          <Card className="border border-border shadow-sm noHover print:hidden">
             <CardHeader>
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>
@@ -399,7 +399,7 @@ export default function LaporanPage() {
         </TabsContent>
 
         <TabsContent value="neraca" className="space-y-4">
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-border shadow-sm print:hidden">
             <CardHeader>
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>
@@ -491,7 +491,7 @@ export default function LaporanPage() {
         </TabsContent>
 
         <TabsContent value="arus-kas" className="space-y-4">
-          <Card className="border border-border shadow-sm" noHover>
+          <Card className="border border-border shadow-sm noHover print:hidden">
             <CardHeader>
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>
@@ -592,15 +592,15 @@ function renderArusKasSection(title: string, colorClass: string, items: ArusKasI
               <tbody>
                 {items.map((item, idx) => (
                   <tr key={idx} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
-                    <td className="py-3 px-3 text-muted-foreground">{item.tanggal}</td>
-                    <td className="py-3 px-3">
+                    <td className="py-2 px-3 text-muted-foreground">{item.tanggal}</td>
+                    <td className="py-2 px-3">
                       <p className="font-medium text-foreground">{item.keterangan}</p>
                       <p className="text-[10px] text-muted-foreground">{item.akun}</p>
                     </td>
-                    <td className="py-3 px-3 text-right text-emerald-600 font-medium">
+                    <td className="py-2 px-3 text-right text-emerald-600 font-medium">
                       {item.masuk > 0 ? formatRupiah(item.masuk) : "-"}
                     </td>
-                    <td className="py-3 px-3 text-right text-red-600 font-medium">
+                    <td className="py-2 px-3 text-right text-red-600 font-medium">
                       {item.keluar > 0 ? formatRupiah(item.keluar) : "-"}
                     </td>
                   </tr>

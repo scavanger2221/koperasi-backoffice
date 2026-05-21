@@ -38,7 +38,7 @@ interface SimpananItem {
 
 const jenisColors: Record<string, string> = {
   pokok: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
-  wajib: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+  wajib: "bg-primary/15 text-primary border-primary/30",
   sukarela: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
   deposito: "bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-900",
 };
@@ -119,7 +119,7 @@ export default function SimpananPage() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
               <Plus className="w-4 h-4 mr-1.5" />
               Catat Setoran
             </Button>
@@ -127,7 +127,7 @@ export default function SimpananPage() {
           <DialogContent className="max-w-md border-0 shadow-xl">
             <DialogHeader>
               <DialogTitle className="text-lg flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-emerald-600" />
+              <Wallet className="w-5 h-5 text-primary" />
               Catat Setoran Baru
             </DialogTitle>
             </DialogHeader>
@@ -215,9 +215,9 @@ export default function SimpananPage() {
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => { setOpen(false); setErrors({}); }}>Batal</Button>
-                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={createMutation.isPending}>
+                <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={createMutation.isPending}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                  Simpan Setoran
+                  Simpan Transaksi
                 </Button>
               </div>
             </form>
@@ -282,10 +282,10 @@ export default function SimpananPage() {
                             {s.jenis}
                           </Badge>
                         </td>
-                        <td className="py-3 px-3 text-right font-semibold text-foreground">{formatRupiah(s.jumlah)}</td>
+                        <td className="py-3 px-3 text-right font-semibold text-primary">{formatRupiah(s.jumlah)}</td>
                         <td className="py-3 px-3">
                           <span className="text-xs text-muted-foreground capitalize flex items-center gap-1">
-                            <ArrowUpRight className="w-3 h-3 text-emerald-500" />
+                            <ArrowUpRight className="w-3 h-3 text-primary" />
                             {s.metodeBayar}
                           </span>
                         </td>

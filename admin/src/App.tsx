@@ -1,21 +1,23 @@
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
-import Login from "@/pages/Login";
-import Dashboard from "@/pages/Dashboard";
-import Anggota from "@/pages/Anggota";
-import SimpananPage from "@/pages/Simpanan";
-import PinjamanPage from "@/pages/Pinjaman";
-import BukuKasPage from "@/pages/BukuKas";
-import LaporanPage from "@/pages/Laporan";
-import TagihanPage from "@/pages/Tagihan";
-import AuditLogPage from "@/pages/AuditLog";
-import SHUPage from "@/pages/SHU";
-import RATPage from "@/pages/RAT";
-import UsersPage from "@/pages/Users";
-import PengaturanPage from "@/pages/Pengaturan";
-import PeriodeBukuPage from "@/pages/PeriodeBuku";
+import { Loader2 } from "lucide-react";
+
+const Login = lazy(() => import("@/pages/Login"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Anggota = lazy(() => import("@/pages/Anggota"));
+const SimpananPage = lazy(() => import("@/pages/Simpanan"));
+const PinjamanPage = lazy(() => import("@/pages/Pinjaman"));
+const BukuKasPage = lazy(() => import("@/pages/BukuKas"));
+const LaporanPage = lazy(() => import("@/pages/Laporan"));
+const TagihanPage = lazy(() => import("@/pages/Tagihan"));
+const AuditLogPage = lazy(() => import("@/pages/AuditLog"));
+const SHUPage = lazy(() => import("@/pages/SHU"));
+const RATPage = lazy(() => import("@/pages/RAT"));
+const UsersPage = lazy(() => import("@/pages/Users"));
+const PengaturanPage = lazy(() => import("@/pages/Pengaturan"));
+const PeriodeBukuPage = lazy(() => import("@/pages/PeriodeBuku"));
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, ready } = useAuth();
@@ -147,7 +149,15 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <Suspense
+        fallback={
+          <div className="flex h-screen w-screen items-center justify-center bg-background">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        }
+      >
+        <AppRoutes />
+      </Suspense>
     </AuthProvider>
   );
 }
