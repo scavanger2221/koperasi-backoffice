@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   PiggyBank,
@@ -12,6 +12,9 @@ import {
   Check,
   Users,
   FileDown,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
 import { api, downloadBlob } from "@/lib/api";
 import { formatRupiah } from "@/lib/utils";
@@ -107,6 +111,16 @@ export default function SHUPage() {
   const [selected, setSelected] = useState<ShuItem | null>(null);
   const [periodeHitung, setPeriodeHitung] = useState(new Date().getFullYear().toString());
   const [hitungErrors, setHitungErrors] = useState<FieldErrors>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ type: "konfirmasi" | "sahkan" | "bagikan" | "hapus"; id: string } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -195,6 +209,24 @@ export default function SHUPage() {
     hitungMutation.mutate(periodeHitung);
   };
 
+  const confirmAction = () => {
+    if (!confirmTarget) return;
+    switch (confirmTarget.type) {
+      case "konfirmasi":
+        konfirmasiMutation.mutate(confirmTarget.id);
+        break;
+      case "sahkan":
+        sahkanMutation.mutate(confirmTarget.id);
+        break;
+      case "bagikan":
+        bagikanMutation.mutate(confirmTarget.id);
+        break;
+      case "hapus":
+        hapusMutation.mutate(confirmTarget.id);
+        break;
+    }
+  };
+
   const currentStatusIndex = (status: string) => {
     return statusSteps.findIndex((s) => s.key === status);
   };
@@ -204,7 +236,7 @@ export default function SHUPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             SHU (Sisa Hasil Usaha)
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -428,9 +460,10 @@ export default function SHUPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="w-8 h-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30"
-                                  onClick={() =>
-                                    konfirmasiMutation.mutate(s.id)
-                                  }
+                                  onClick={() => {
+                                    setConfirmTarget({ type: "konfirmasi", id: s.id });
+                                    setConfirmOpen(true);
+                                  }}
                                   title="Konfirmasi SHU"
                                 >
                                   <CheckCircle className="w-3.5 h-3.5" />
@@ -441,9 +474,10 @@ export default function SHUPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="w-8 h-8 text-muted-foreground hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30"
-                                  onClick={() =>
-                                    sahkanMutation.mutate(s.id)
-                                  }
+                                  onClick={() => {
+                                    setConfirmTarget({ type: "sahkan", id: s.id });
+                                    setConfirmOpen(true);
+                                  }}
                                   title="Sahkan SHU"
                                 >
                                   <FileCheck className="w-3.5 h-3.5" />
@@ -454,9 +488,10 @@ export default function SHUPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="w-8 h-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                                  onClick={() =>
-                                    bagikanMutation.mutate(s.id)
-                                  }
+                                  onClick={() => {
+                                    setConfirmTarget({ type: "bagikan", id: s.id });
+                                    setConfirmOpen(true);
+                                  }}
                                   title="Bagikan SHU"
                                 >
                                   <Share2 className="w-3.5 h-3.5" />
@@ -489,7 +524,7 @@ export default function SHUPage() {
                   return (
                     <div
                       key={s.id}
-                      className="p-4 rounded-xl bg-card border border-border shadow-sm"
+                      className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform"
                     >
                       <div className="flex items-start justify-between">
                         <div>
@@ -538,11 +573,11 @@ export default function SHUPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="mt-3 flex gap-2">
+                      <div className="mt-3 flex flex-wrap gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1 h-8 text-xs"
+                            className="flex-auto h-10 text-xs"
                           onClick={() => openDetail(s)}
                         >
                           <Eye className="w-3 h-3 mr-1" />
@@ -552,7 +587,7 @@ export default function SHUPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1 h-8 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:hover:bg-blue-950/30"
+                            className="flex-auto h-10 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:hover:bg-blue-950/30"
                             onClick={() =>
                               konfirmasiMutation.mutate(s.id)
                             }
@@ -565,7 +600,7 @@ export default function SHUPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1 h-8 text-xs text-purple-600 border-purple-200 hover:bg-purple-50 dark:border-purple-900 dark:hover:bg-purple-950/30"
+                            className="flex-auto h-10 text-xs text-purple-600 border-purple-200 hover:bg-purple-50 dark:border-purple-900 dark:hover:bg-purple-950/30"
                             onClick={() =>
                               sahkanMutation.mutate(s.id)
                             }
@@ -578,7 +613,7 @@ export default function SHUPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1 h-8 text-xs text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/30"
+                            className="flex-auto h-10 text-xs text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/30"
                             onClick={() =>
                               bagikanMutation.mutate(s.id)
                             }
@@ -602,181 +637,407 @@ export default function SHUPage() {
         </CardContent>
       </Card>
 
-      {/* Detail Dialog */}
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-        <DialogContent className="border-0 shadow-xl max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-lg flex items-center gap-2">
-              <PiggyBank className="w-5 h-5 text-emerald-600" />
-              Detail SHU {selected?.periode}
-            </DialogTitle>
-          </DialogHeader>
-          {detailLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : detailQuery?.data ? (
-            <div className="space-y-5 mt-2">
-              {/* Status Progress */}
-              <div className="flex items-center justify-between px-2">
-                {statusSteps.map((step, idx) => {
-                  const currentIdx = currentStatusIndex(
-                    detailQuery.data.status
-                  );
-                  const done = idx <= currentIdx;
-                  return (
-                    <div key={step.key} className="flex items-center gap-1.5">
-                      <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
-                          done
-                            ? "bg-emerald-600 text-white"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {done ? (
-                          <Check className="w-3.5 h-3.5" />
-                        ) : (
-                          idx + 1
-                        )}
-                      </div>
-                      <span
-                        className={`text-xs font-medium ${
-                          done ? "text-foreground" : "text-muted-foreground"
-                        }`}
-                      >
-                        {step.label}
-                      </span>
-                      {idx < statusSteps.length - 1 && (
-                        <div
-                          className={`w-6 h-px mx-1 ${
-                            idx < currentIdx
-                              ? "bg-emerald-500"
-                              : "bg-border"
-                          }`}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Summary */}
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="p-3 rounded-lg bg-muted border border-border">
-                  <p className="text-[10px] text-muted-foreground uppercase">
-                    Total Pendapatan
-                  </p>
-                  <p className="font-semibold text-foreground">
-                    {formatRupiah(detailQuery.data.totalPendapatan)}
-                  </p>
+        {/* Detail Dialog */}
+        <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+          <DialogContent className="max-w-4xl lg:max-w-5xl xl:max-w-6xl max-h-[90vh] overflow-y-auto border-0 shadow-xl pr-12">
+            {detailLoading ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-lg flex items-center gap-2">
+                    <PiggyBank className="w-5 h-5 text-emerald-600" />
+                    Detail SHU
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
-                <div className="p-3 rounded-lg bg-muted border border-border">
-                  <p className="text-[10px] text-muted-foreground uppercase">
-                    Total Biaya
-                  </p>
-                  <p className="font-semibold text-foreground">
-                    {formatRupiah(detailQuery.data.totalBiaya)}
-                  </p>
-                </div>
-                <div className="p-3 rounded-lg bg-muted border border-border col-span-2">
-                  <p className="text-[10px] text-muted-foreground uppercase">
-                    SHU Bersih
-                  </p>
-                  <p className="text-lg font-bold text-emerald-600">
-                    {formatRupiah(detailQuery.data.totalShu)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Alokasi */}
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-2">
-                  Alokasi SHU
-                </p>
-                <div className="space-y-1.5">
-                  {[
-                    {
-                      label: "Dana Anggota",
-                      value: detailQuery.data.danaAnggota,
-                      pct: detailQuery.data.alokasiAnggota,
-                      color: "text-emerald-600",
-                    },
-                    {
-                      label: "Dana Cadangan",
-                      value: detailQuery.data.danaCadangan,
-                      pct: detailQuery.data.alokasiCadangan,
-                      color: "text-blue-600",
-                    },
-                    {
-                      label: "Dana Pengurus",
-                      value: detailQuery.data.danaPengurus,
-                      pct: detailQuery.data.alokasiPengurus,
-                      color: "text-purple-600",
-                    },
-                    {
-                      label: "Dana Pendidikan",
-                      value: detailQuery.data.danaPendidikan,
-                      pct: detailQuery.data.alokasiPendidikan,
-                      color: "text-amber-600",
-                    },
-                    {
-                      label: "Dana Sosial",
-                      value: detailQuery.data.danaSosial,
-                      pct: detailQuery.data.alokasiSosial,
-                      color: "text-rose-600",
-                    },
-                    {
-                      label: "Dana Lain-lain",
-                      value: detailQuery.data.danaLain,
-                      pct: detailQuery.data.alokasiLain,
-                      color: "text-gray-600",
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.label}
-                      className="flex items-center justify-between p-2 rounded-lg bg-card border border-border text-sm"
+              </>
+            ) : detailQuery?.data ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-lg flex items-center gap-2 pr-10">
+                    <PiggyBank className="w-5 h-5 text-emerald-600" />
+                    Detail SHU {detailQuery.data.periode}
+                    <Badge
+                      className={`${statusConfig[detailQuery.data.status].className} font-medium text-[11px] px-2 py-0.5 ml-2`}
+                      variant="outline"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
-                          {item.pct}%
-                        </span>
-                        <span className="font-medium text-foreground">
-                          {item.label}
-                        </span>
+                      {statusConfig[detailQuery.data.status].label}
+                    </Badge>
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-4">
+                  {/* Status Progress Stepper */}
+                  <div className="flex items-center justify-center gap-2 py-2">
+                    {statusSteps.map((step, idx) => {
+                      const currentIdx = currentStatusIndex(detailQuery.data.status);
+                      const done = idx <= currentIdx;
+                      return (
+                        <div key={step.key} className="flex items-center gap-2">
+                          <div
+                            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                              done ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {done ? <Check className="w-3.5 h-3.5" /> : idx + 1}
+                          </div>
+                          <span className={`text-xs font-medium ${done ? "text-foreground" : "text-muted-foreground"}`}>
+                            {step.label}
+                          </span>
+                          {idx < statusSteps.length - 1 && (
+                            <div className={`w-8 h-px mx-1 ${idx < currentIdx ? "bg-emerald-500" : "bg-border"}`} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Summary Stat Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-4 flex items-center gap-3 rounded-xl bg-muted">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center shrink-0">
+                        <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <span className={`font-semibold ${item.color}`}>
-                        {formatRupiah(item.value)}
-                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Total Pendapatan</p>
+                        <p className="text-lg font-bold text-foreground truncate">
+                          {formatRupiah(detailQuery.data.totalPendapatan)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 flex items-center gap-3 rounded-xl bg-muted">
+                      <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center shrink-0">
+                        <TrendingDown className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Total Biaya</p>
+                        <p className="text-lg font-bold text-foreground truncate">
+                          {formatRupiah(detailQuery.data.totalBiaya)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 flex items-center gap-3 rounded-xl bg-muted sm:col-span-2 lg:col-span-1">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center shrink-0">
+                        <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">SHU Bersih</p>
+                        <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                          {formatRupiah(detailQuery.data.totalShu)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Alokasi & Per-Anggota */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Alokasi SHU */}
+                    <div className="p-4 rounded-xl bg-muted">
+                      <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <span className="w-1 h-4 bg-emerald-600 rounded-full"></span>
+                        Alokasi SHU
+                      </p>
+                      <div className="space-y-2">
+                        {[
+                          { label: "Dana Anggota", value: detailQuery.data.danaAnggota, pct: detailQuery.data.alokasiAnggota, color: "text-emerald-600 dark:text-emerald-400" },
+                          { label: "Dana Cadangan", value: detailQuery.data.danaCadangan, pct: detailQuery.data.alokasiCadangan, color: "text-blue-600 dark:text-blue-400" },
+                          { label: "Dana Pengurus", value: detailQuery.data.danaPengurus, pct: detailQuery.data.alokasiPengurus, color: "text-purple-600 dark:text-purple-400" },
+                          { label: "Dana Pendidikan", value: detailQuery.data.danaPendidikan, pct: detailQuery.data.alokasiPendidikan, color: "text-amber-600 dark:text-amber-400" },
+                          { label: "Dana Sosial", value: detailQuery.data.danaSosial, pct: detailQuery.data.alokasiSosial, color: "text-rose-600 dark:text-rose-400" },
+                          { label: "Dana Lain-lain", value: detailQuery.data.danaLain, pct: detailQuery.data.alokasiLain, color: "text-gray-600 dark:text-gray-400" },
+                        ].map((item) => (
+                          <div key={item.label} className="flex items-center justify-between p-2.5 rounded-lg hover:bg-card transition-colors">
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-xs font-bold text-muted-foreground bg-card px-2 py-1 rounded-md font-mono">
+                                {item.pct}%
+                              </span>
+                              <span className="text-sm font-medium text-foreground">{item.label}</span>
+                            </div>
+                            <span className={`text-sm font-semibold ${item.color}`}>
+                              {formatRupiah(item.value)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Per-Anggota Rincian */}
+                    {detailQuery.data.anggotaList && detailQuery.data.anggotaList.length > 0 && (
+                      <div className="p-4 rounded-xl bg-muted">
+                        <p className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                          <Users className="w-4 h-4 text-muted-foreground" />
+                          Rincian per Anggota
+                        </p>
+                        <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                          {detailQuery.data.anggotaList.map((a) => (
+                            <div
+                              key={a.id}
+                              className="flex items-center justify-between p-2.5 rounded-lg bg-card"
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">
+                                  {a.anggota?.nama || "-"}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {a.anggota?.noAnggota || ""} · JMA: {formatRupiah(a.jma)} · JUA: {formatRupiah(a.jua)}
+                                </p>
+                              </div>
+                              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 ml-3 shrink-0">
+                                {formatRupiah(a.total)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/30"
+                      onClick={() => downloadBlob(`/api/shu/${selected!.id}/export/xlsx`, `shu-${selected!.periode}.xlsx`)}
+                    >
+                      <FileDown className="w-4 h-4 mr-1.5" />
+                      XLSX
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
+                      onClick={() => downloadBlob(`/api/shu/${selected!.id}/export/pdf`, `shu-${selected!.periode}.pdf`)}
+                    >
+                      <FileDown className="w-4 h-4 mr-1.5" />
+                      PDF
+                    </Button>
+                    {detailQuery.data.status === "draft" && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
+                          onClick={() => {
+                            setConfirmTarget({ type: "hapus", id: detailQuery.data.id });
+                            setConfirmOpen(true);
+                          }}
+                          disabled={hapusMutation.isPending}
+                        >
+                          {hapusMutation.isPending ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-1.5" />
+                          )}
+                          Hapus
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="ml-auto bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => {
+                            setConfirmTarget({ type: "konfirmasi", id: detailQuery.data.id });
+                            setConfirmOpen(true);
+                          }}
+                          disabled={konfirmasiMutation.isPending}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1.5" />
+                          Konfirmasi
+                        </Button>
+                      </>
+                    )}
+                    {detailQuery.data.status === "dikonfirmasi" && (
+                      <Button
+                        size="sm"
+                        className="ml-auto bg-purple-600 hover:bg-purple-700 text-white"
+                        onClick={() => {
+                          setConfirmTarget({ type: "sahkan", id: detailQuery.data.id });
+                          setConfirmOpen(true);
+                        }}
+                        disabled={sahkanMutation.isPending}
+                      >
+                        <FileCheck className="w-4 h-4 mr-1.5" />
+                        Sahkan SHU
+                      </Button>
+                    )}
+                    {detailQuery.data.status === "disahkan" && (
+                      <Button
+                        size="sm"
+                        className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => {
+                          setConfirmTarget({ type: "bagikan", id: detailQuery.data.id });
+                          setConfirmOpen(true);
+                        }}
+                        disabled={bagikanMutation.isPending}
+                      >
+                        <Share2 className="w-4 h-4 mr-1.5" />
+                        Bagikan ke Anggota
+                      </Button>
+                    )}
+                    {detailQuery.data.status === "dibagikan" && (
+                      <div className="ml-auto flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 font-medium">
+                        <Check className="w-4 h-4" />
+                        SHU sudah dibagikan
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <DialogTitle className="sr-only">Detail SHU</DialogTitle>
+            )}
+          </DialogContent>
+        </Dialog>
+
+
+       {/* Confirm action dialog */}
+       <ConfirmDialog
+         open={confirmOpen}
+         onOpenChange={(v) => { setConfirmOpen(v); if (!v) setConfirmTarget(null); }}
+         title={
+           confirmTarget?.type === "konfirmasi"
+             ? "Konfirmasi SHU?"
+             : confirmTarget?.type === "sahkan"
+             ? "Sahkan SHU?"
+             : confirmTarget?.type === "bagikan"
+             ? "Bagikan SHU ke Anggota?"
+             : "Hapus SHU?"
+         }
+         description={
+           confirmTarget?.type === "konfirmasi"
+             ? "SHU akan dikonfirmasi. Status akan berubah menjadi Dikonfirmasi."
+             : confirmTarget?.type === "sahkan"
+             ? "SHU akan disahkan. Data tidak dapat diubah lagi setelah disahkan."
+             : confirmTarget?.type === "bagikan"
+             ? "SHU akan dibagikan ke semua anggota. Proses ini tidak dapat dibatalkan."
+             : "SHU akan dihapus secara permanen. Data yang terhapus tidak dapat dikembalikan."
+         }
+         confirmLabel="Ya, Lanjutkan"
+         variant={
+           confirmTarget?.type === "hapus"
+             ? "destructive"
+             : confirmTarget?.type === "bagikan"
+             ? "warning"
+             : "info"
+         }
+         onConfirm={confirmAction}
+         disabled={konfirmasiMutation.isPending || sahkanMutation.isPending || bagikanMutation.isPending || hapusMutation.isPending}
+       />
+
+       {/* Mobile-only Detail Dialog - completely separate design */}
+       <Dialog open={detailOpen && isMobile} onOpenChange={(v) => { if (!v) setDetailOpen(false); }}>
+         <DialogContent className="max-w-full max-w-[360px] max-h-[100dvh] sm:h-auto sm:max-w-md overflow-y-auto border-0 shadow-xl rounded-none sm:rounded-lg p-3 pr-4">
+              {detailLoading ? (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="text-base">Detail SHU</DialogTitle>
+                  </DialogHeader>
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                  </div>
+                </>
+              ) : detailQuery?.data ? (
+                <>
+                  <DialogHeader className="pr-6">
+                   <DialogTitle className="text-base flex items-center gap-2">
+                     <PiggyBank className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                     <span className="truncate">{detailQuery.data.periode}</span>
+                     <Badge
+                       className={`${statusConfig[detailQuery.data.status].className} font-medium text-[10px] px-1.5 py-0.5 ml-auto flex-shrink-0`}
+                       variant="outline"
+                     >
+                       {statusConfig[detailQuery.data.status].label}
+                     </Badge>
+                   </DialogTitle>
+                 </DialogHeader>
+
+                 <div className="space-y-4">
+
+                {/* Stats in stacked single column on mobile */}
+                <div className="grid grid-cols-1 gap-2">
+                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30">
+                    <p className="text-[10px] text-blue-700 dark:text-blue-300 uppercase font-semibold">Pendapatan</p>
+                    <p className="text-sm font-bold text-blue-900 dark:text-blue-100 mt-1 break-all">
+                      {formatRupiah(detailQuery.data.totalPendapatan)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30">
+                    <p className="text-[10px] text-rose-700 dark:text-rose-300 uppercase font-semibold">Biaya</p>
+                    <p className="text-sm font-bold text-rose-900 dark:text-rose-100 mt-1 break-all">
+                      {formatRupiah(detailQuery.data.totalBiaya)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-300 uppercase font-semibold">SHU Bersih</p>
+                    <p className="text-base font-bold text-emerald-700 dark:text-emerald-300 mt-1 break-all">
+                      {formatRupiah(detailQuery.data.totalShu)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status Progress */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground mb-1.5">Status</p>
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1 px-1">
+                    {statusSteps.map((step, idx) => {
+                      const currentIdx = currentStatusIndex(detailQuery.data.status);
+                      const done = idx <= currentIdx;
+                      return (
+                        <div key={step.key} className="flex items-center gap-1 flex-shrink-0">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                            done ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground"
+                          }`}>
+                            {done ? <Check className="w-3 h-3" /> : idx + 1}
+                          </div>
+                          <span className={`text-[9px] leading-tight max-w-[50px] ${done ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                            {step.label}
+                          </span>
+                          {idx < statusSteps.length - 1 && (
+                            <div className={`w-3 h-px mx-0.5 flex-shrink-0 ${idx < currentIdx ? "bg-emerald-500" : "bg-border"}`} />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Alokasi - accordion style on mobile */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-foreground">Alokasi SHU</p>
+                  {[
+                    { label: "Anggota", value: detailQuery.data.danaAnggota, pct: detailQuery.data.alokasiAnggota, color: "text-emerald-600" },
+                    { label: "Cadangan", value: detailQuery.data.danaCadangan, pct: detailQuery.data.alokasiCadangan, color: "text-blue-600" },
+                    { label: "Pengurus", value: detailQuery.data.danaPengurus, pct: detailQuery.data.alokasiPengurus, color: "text-purple-600" },
+                    { label: "Pendidikan", value: detailQuery.data.danaPendidikan, pct: detailQuery.data.alokasiPendidikan, color: "text-amber-600" },
+                    { label: "Sosial", value: detailQuery.data.danaSosial, pct: detailQuery.data.alokasiSosial, color: "text-rose-600" },
+                    { label: "Lain-lain", value: detailQuery.data.danaLain, pct: detailQuery.data.alokasiLain, color: "text-gray-600" },
+                  ].map((item) => (
+                    <div key={item.label} className="flex flex-col gap-0.5 p-2.5 rounded-lg bg-muted">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-medium text-foreground truncate">{item.label}</span>
+                        <span className="text-[9px] font-mono text-muted-foreground ml-2 flex-shrink-0">{item.pct}%</span>
+                      </div>
+                      <span className={`text-[11px] font-bold ${item.color} truncate block`}>{formatRupiah(item.value)}</span>
                     </div>
                   ))}
                 </div>
-              </div>
 
-              {/* Per-Anggota Breakdown */}
-              {detailQuery.data.anggotaList &&
-                detailQuery.data.anggotaList.length > 0 && (
+                {/* Per-Anggota - condensed list */}
+                {detailQuery.data.anggotaList && detailQuery.data.anggotaList.length > 0 && (
                   <div>
-                    <p className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                      Rincian per Anggota
-                    </p>
-                    <div className="max-h-64 overflow-y-auto space-y-1.5">
+                    <p className="text-xs font-semibold text-foreground mb-1.5">Rincian per Anggota</p>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
                       {detailQuery.data.anggotaList.map((a) => (
-                        <div
-                          key={a.id}
-                          className="flex items-center justify-between p-2.5 rounded-lg border border-border text-sm"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">
-                              {a.anggota?.nama || "-"}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {a.anggota?.noAnggota || ""} · JMA:{" "}
-                              {formatRupiah(a.jma)} · JUA:{" "}
-                              {formatRupiah(a.jua)}
+                        <div key={a.id} className="flex items-center justify-between p-2 rounded-lg bg-card gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-medium text-foreground truncate">{a.anggota?.nama || "-"}</p>
+                            <p className="text-[9px] text-muted-foreground truncate">
+                              {a.anggota?.noAnggota || ""} · JMA: {formatRupiah(a.jma)}
                             </p>
                           </div>
-                          <span className="font-semibold text-emerald-600 text-right shrink-0 ml-3">
+                          <span className="text-[11px] font-bold text-emerald-600 ml-2 shrink-0 whitespace-nowrap">
                             {formatRupiah(a.total)}
                           </span>
                         </div>
@@ -785,105 +1046,97 @@ export default function SHUPage() {
                   </div>
                 )}
 
-              {/* Actions */}
-              <div className="flex gap-2 pt-2 border-t border-border">
-                {/* Export buttons — always visible */}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/30"
-                  onClick={() => downloadBlob(`/api/shu/${selected!.id}/export/xlsx`, `shu-${selected!.periode}.xlsx`)}
-                >
-                  <FileDown className="w-3 h-3 mr-1" />
-                  XLSX
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
-                  onClick={() => downloadBlob(`/api/shu/${selected!.id}/export/pdf`, `shu-${selected!.periode}.pdf`)}
-                >
-                  <FileDown className="w-3 h-3 mr-1" />
-                  PDF
-                </Button>
-                {detailQuery.data.status === "draft" && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
-                      onClick={() => hapusMutation.mutate(detailQuery.data.id)}
-                      disabled={hapusMutation.isPending}
-                    >
-                      {hapusMutation.isPending ? (
-                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                      ) : (
-                        <Trash2 className="w-3 h-3 mr-1" />
-                      )}
-                      Hapus
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="ml-auto bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() =>
-                        konfirmasiMutation.mutate(detailQuery.data.id)
-                      }
-                      disabled={konfirmasiMutation.isPending}
-                    >
-                      {konfirmasiMutation.isPending ? (
-                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                      ) : (
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                      )}
-                      Konfirmasi
-                    </Button>
-                  </>
-                )}
-                {detailQuery.data.status === "dikonfirmasi" && (
+                {/* Actions - full width buttons */}
+                <div className="space-y-2 pt-3 border-t border-border">
                   <Button
+                    variant="outline"
                     size="sm"
-                    className="ml-auto bg-purple-600 hover:bg-purple-700 text-white"
-                    onClick={() =>
-                      sahkanMutation.mutate(detailQuery.data.id)
-                    }
-                    disabled={sahkanMutation.isPending}
+                    className="w-full text-emerald-600 border-emerald-200"
+                    onClick={() => downloadBlob(`/api/shu/${selected!.id}/export/xlsx`, `shu-${selected!.periode}.xlsx`)}
                   >
-                    {sahkanMutation.isPending ? (
-                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                    ) : (
-                      <FileCheck className="w-3 h-3 mr-1" />
-                    )}
-                    Sahkan SHU
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Export XLSX
                   </Button>
-                )}
-                {detailQuery.data.status === "disahkan" && (
                   <Button
+                    variant="outline"
                     size="sm"
-                    className="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={() =>
-                      bagikanMutation.mutate(detailQuery.data.id)
-                    }
-                    disabled={bagikanMutation.isPending}
+                    className="w-full text-red-600 border-red-200"
+                    onClick={() => downloadBlob(`/api/shu/${selected!.id}/export/pdf`, `shu-${selected!.periode}.pdf`)}
                   >
-                    {bagikanMutation.isPending ? (
-                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                    ) : (
-                      <Share2 className="w-3 h-3 mr-1" />
-                    )}
-                    Bagikan ke Anggota
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Export PDF
                   </Button>
-                )}
-                {detailQuery.data.status === "dibagikan" && (
-                  <div className="ml-auto flex items-center gap-1.5 text-sm text-emerald-600 font-medium">
-                    <Check className="w-4 h-4" />
-                    SHU sudah dibagikan
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
+                  {detailQuery.data.status === "draft" && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-red-600 border-red-200"
+                        onClick={() => {
+                          setConfirmTarget({ type: "hapus", id: detailQuery.data.id });
+                          setConfirmOpen(true);
+                        }}
+                        disabled={hapusMutation.isPending}
+                      >
+                        {hapusMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                        Hapus
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => {
+                          setConfirmTarget({ type: "konfirmasi", id: detailQuery.data.id });
+                          setConfirmOpen(true);
+                        }}
+                        disabled={konfirmasiMutation.isPending}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Konfirmasi
+                      </Button>
+                    </>
+                  )}
+                  {detailQuery.data.status === "dikonfirmasi" && (
+                    <Button
+                      size="sm"
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                      onClick={() => {
+                        setConfirmTarget({ type: "sahkan", id: detailQuery.data.id });
+                        setConfirmOpen(true);
+                      }}
+                      disabled={sahkanMutation.isPending}
+                    >
+                      <FileCheck className="w-4 h-4 mr-2" />
+                      Sahkan SHU
+                    </Button>
+                  )}
+                  {detailQuery.data.status === "disahkan" && (
+                    <Button
+                      size="sm"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                      onClick={() => {
+                        setConfirmTarget({ type: "bagikan", id: detailQuery.data.id });
+                        setConfirmOpen(true);
+                      }}
+                      disabled={bagikanMutation.isPending}
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Bagikan ke Anggota
+                    </Button>
+                  )}
+                  {detailQuery.data.status === "dibagikan" && (
+                    <div className="flex items-center justify-center gap-2 text-sm text-emerald-600 font-medium py-2">
+                      <Check className="w-4 h-4" />
+                      SHU sudah dibagikan
+                    </div>
+                  )}
+                 </div>
+               </div>
+               </>
+              ) : (
+                <DialogTitle className="sr-only">Detail SHU</DialogTitle>
+              )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
