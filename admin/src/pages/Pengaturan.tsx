@@ -76,6 +76,7 @@ export default function PengaturanPage() {
   const { data: koperasiData, isLoading } = useQuery({
     queryKey: ["koperasi"],
     queryFn: () => api<{ data: KoperasiData | null }>("/api/koperasi"),
+    staleTime: 30_000,
   });
 
   const koperasi = koperasiData?.data;
@@ -164,7 +165,7 @@ export default function PengaturanPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             Pengaturan Koperasi
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">

@@ -3,7 +3,9 @@ import { periodeBukuService } from "../services/periode-buku.service.js";
 
 export const periodeBukuController = {
   async list(c: Context) {
-    const result = await periodeBukuService.list();
+    const page = Number(c.req.query("page")) || 1;
+    const limit = Number(c.req.query("limit")) || 50;
+    const result = await periodeBukuService.list({ page, limit });
     return c.json({ success: true, ...result });
   },
 

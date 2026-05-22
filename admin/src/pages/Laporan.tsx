@@ -99,7 +99,7 @@ export default function LaporanPage() {
     if (activeTab === "laba-rugi") fetchLabaRugi();
     if (activeTab === "neraca") fetchNeraca(nPeriodeMulai, nPeriodeSelesai);
     if (activeTab === "arus-kas") fetchArusKas();
-  }, [activeTab]);
+  }, [activeTab, nsPeriodeMulai, nsPeriodeSelesai, nPeriodeMulai, nPeriodeSelesai, periodeMulai, periodeSelesai]);
 
   // Auto-fetch buku besar when akun is selected
   useEffect(() => {
@@ -190,13 +190,13 @@ export default function LaporanPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Laporan Keuangan</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Laporan Keuangan</h1>
           <p className="text-muted-foreground text-sm mt-1">Lihat buku besar, neraca saldo, laba rugi, dan neraca</p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 print:hidden">
+        <TabsList className="flex w-full overflow-x-auto print:hidden gap-1 p-1 *:shrink-0 lg:grid lg:grid-cols-5 lg:overflow-visible">
           <TabsTrigger value="buku-besar"><BookOpen className="w-4 h-4 mr-2" />Buku Besar</TabsTrigger>
           <TabsTrigger value="neraca-saldo"><Scale className="w-4 h-4 mr-2" />Neraca Saldo</TabsTrigger>
           <TabsTrigger value="laba-rugi"><TrendingUp className="w-4 h-4 mr-2" />Laba Rugi</TabsTrigger>
@@ -220,10 +220,10 @@ export default function LaporanPage() {
                   hint: a.tipe,
                 }))}
                 placeholder="Pilih akun"
-                triggerClassName="w-[280px]"
+                triggerClassName="w-full sm:w-[280px]"
               />
-              <Input type="date" value={periodeMulai} onChange={(e) => setPeriodeMulai(e.target.value)} className="w-[160px]" placeholder="Dari" />
-              <Input type="date" value={periodeSelesai} onChange={(e) => setPeriodeSelesai(e.target.value)} className="w-[160px]" placeholder="Sampai" />
+              <Input type="date" value={periodeMulai} onChange={(e) => setPeriodeMulai(e.target.value)} className="flex-1 min-w-[120px] max-w-[160px]" placeholder="Dari" />
+              <Input type="date" value={periodeSelesai} onChange={(e) => setPeriodeSelesai(e.target.value)} className="flex-1 min-w-[120px] max-w-[160px]" placeholder="Sampai" />
               <Button onClick={fetchBukuBesar} disabled={!selectedAkun || loading}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Tampilkan
@@ -239,7 +239,8 @@ export default function LaporanPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
+                {/* Desktop Table */}
+                <div className="hidden lg:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border">
@@ -268,6 +269,35 @@ export default function LaporanPage() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* Mobile Cards */}
+                <div className="lg:hidden space-y-3">
+                  {bukuBesar.data.map((row) => (
+                    <div key={row.id} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">{row.tanggal}</p>
+                          <p className="font-semibold text-foreground mt-0.5">{row.noJurnal}</p>
+                        </div>
+                        <p className="text-sm font-bold text-foreground">{formatRupiah(row.saldo)}</p>
+                      </div>
+                      <p className="text-sm text-foreground mt-2">{row.keterangan}</p>
+                      <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Debit</p>
+                          <p className="font-medium text-emerald-600">{Number(row.debit) > 0 ? formatRupiah(Number(row.debit)) : "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Kredit</p>
+                          <p className="font-medium text-red-600">{Number(row.kredit) > 0 ? formatRupiah(Number(row.kredit)) : "-"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {bukuBesar.data.length === 0 && (
+                    <div className="py-12 text-center text-muted-foreground text-sm">Tidak ada data</div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -279,8 +309,8 @@ export default function LaporanPage() {
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-4">
-              <Input type="date" value={nsPeriodeMulai} onChange={(e) => setNsPeriodeMulai(e.target.value)} className="w-[180px]" />
-              <Input type="date" value={nsPeriodeSelesai} onChange={(e) => setNsPeriodeSelesai(e.target.value)} className="w-[180px]" />
+              <Input type="date" value={nsPeriodeMulai} onChange={(e) => setNsPeriodeMulai(e.target.value)} className="flex-1 min-w-[130px] max-w-[180px]" />
+              <Input type="date" value={nsPeriodeSelesai} onChange={(e) => setNsPeriodeSelesai(e.target.value)} className="flex-1 min-w-[130px] max-w-[180px]" />
               <Button onClick={() => fetchNeracaSaldo(nsPeriodeMulai, nsPeriodeSelesai)} disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Tampilkan
@@ -295,38 +325,76 @@ export default function LaporanPage() {
             <CardContent>
               {loading && <div className="py-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>}
               {neracaSaldo && (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Kode</th>
-                        <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Nama Akun</th>
-                        <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Tipe</th>
-                        <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Debit</th>
-                        <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Kredit</th>
-                        <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Saldo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {neracaSaldo.data.map((row) => (
-                        <tr key={row.akun.id} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
-                          <td className="py-2 px-3 font-mono text-xs">{row.akun.kode}</td>
-                          <td className="py-2 px-3">{row.akun.nama}</td>
-                          <td className="py-2 px-3 capitalize">{row.akun.tipe}</td>
-                          <td className="py-2 px-3 text-right font-medium text-foreground">{formatRupiah(row.debit)}</td>
-                          <td className="py-2 px-3 text-right font-medium text-foreground">{formatRupiah(row.kredit)}</td>
-                          <td className="py-2 px-3 text-right font-bold text-foreground">{formatRupiah(row.saldo)}</td>
+                <>
+                  {/* Desktop Table */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Kode</th>
+                          <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Nama Akun</th>
+                          <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Tipe</th>
+                          <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Debit</th>
+                          <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Kredit</th>
+                          <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Saldo</th>
                         </tr>
-                      ))}
-                      <tr className="border-t-2 border-foreground font-bold">
-                        <td colSpan={3} className="py-2 px-3 text-foreground">Total</td>
-                        <td className="py-2 px-3 text-right text-foreground">{formatRupiah(neracaSaldo.totalDebit)}</td>
-                        <td className="py-2 px-3 text-right text-foreground">{formatRupiah(neracaSaldo.totalKredit)}</td>
-                        <td className="py-2 px-3 text-right text-foreground">-</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {neracaSaldo.data.map((row) => (
+                          <tr key={row.akun.id} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
+                            <td className="py-2 px-3 font-mono text-xs">{row.akun.kode}</td>
+                            <td className="py-2 px-3">{row.akun.nama}</td>
+                            <td className="py-2 px-3 capitalize">{row.akun.tipe}</td>
+                            <td className="py-2 px-3 text-right font-medium text-foreground">{formatRupiah(row.debit)}</td>
+                            <td className="py-2 px-3 text-right font-medium text-foreground">{formatRupiah(row.kredit)}</td>
+                            <td className="py-2 px-3 text-right font-bold text-foreground">{formatRupiah(row.saldo)}</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t-2 border-foreground font-bold">
+                          <td colSpan={3} className="py-2 px-3 text-foreground">Total</td>
+                          <td className="py-2 px-3 text-right text-foreground">{formatRupiah(neracaSaldo.totalDebit)}</td>
+                          <td className="py-2 px-3 text-right text-foreground">{formatRupiah(neracaSaldo.totalKredit)}</td>
+                          <td className="py-2 px-3 text-right text-foreground">-</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="lg:hidden space-y-3">
+                    {neracaSaldo.data.map((row) => (
+                      <div key={row.akun.id} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-muted-foreground">{row.akun.kode}</span>
+                            <span className="text-xs capitalize text-muted-foreground">{row.akun.tipe}</span>
+                          </div>
+                          <span className="text-sm font-bold text-foreground">{formatRupiah(row.saldo)}</span>
+                        </div>
+                        <p className="font-medium text-foreground mt-1">{row.akun.nama}</p>
+                        <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Debit</p>
+                            <p className="font-medium">{formatRupiah(row.debit)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Kredit</p>
+                            <p className="font-medium">{formatRupiah(row.kredit)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <div className="p-5 rounded-2xl bg-muted/50 border border-border">
+                      <div className="flex items-center justify-between font-bold">
+                        <span>Total</span>
+                        <div className="text-right space-x-4">
+                          <span>{formatRupiah(neracaSaldo.totalDebit)}</span>
+                          <span>{formatRupiah(neracaSaldo.totalKredit)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -338,8 +406,8 @@ export default function LaporanPage() {
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-4">
-              <Input type="date" value={periodeMulai} onChange={(e) => setPeriodeMulai(e.target.value)} className="w-[180px]" />
-              <Input type="date" value={periodeSelesai} onChange={(e) => setPeriodeSelesai(e.target.value)} className="w-[180px]" />
+              <Input type="date" value={periodeMulai} onChange={(e) => setPeriodeMulai(e.target.value)} className="flex-1 min-w-[130px] max-w-[180px]" />
+              <Input type="date" value={periodeSelesai} onChange={(e) => setPeriodeSelesai(e.target.value)} className="flex-1 min-w-[130px] max-w-[180px]" />
               <Button onClick={fetchLabaRugi} disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Tampilkan
@@ -404,8 +472,8 @@ export default function LaporanPage() {
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-4">
-              <Input type="date" value={nPeriodeMulai} onChange={(e) => setNPeriodeMulai(e.target.value)} className="w-[180px]" />
-              <Input type="date" value={nPeriodeSelesai} onChange={(e) => setNPeriodeSelesai(e.target.value)} className="w-[180px]" />
+              <Input type="date" value={nPeriodeMulai} onChange={(e) => setNPeriodeMulai(e.target.value)} className="flex-1 min-w-[130px] max-w-[180px]" />
+              <Input type="date" value={nPeriodeSelesai} onChange={(e) => setNPeriodeSelesai(e.target.value)} className="flex-1 min-w-[130px] max-w-[180px]" />
               <Button onClick={() => fetchNeraca(nPeriodeMulai, nPeriodeSelesai)} disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Tampilkan
@@ -496,8 +564,8 @@ export default function LaporanPage() {
               <CardTitle className="text-base">Filter Periode</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-4">
-              <Input type="date" value={periodeMulai} onChange={(e) => setPeriodeMulai(e.target.value)} className="w-[180px]" />
-              <Input type="date" value={periodeSelesai} onChange={(e) => setPeriodeSelesai(e.target.value)} className="w-[180px]" />
+              <Input type="date" value={periodeMulai} onChange={(e) => setPeriodeMulai(e.target.value)} className="flex-1 min-w-[130px] max-w-[180px]" />
+              <Input type="date" value={periodeSelesai} onChange={(e) => setPeriodeSelesai(e.target.value)} className="flex-1 min-w-[130px] max-w-[180px]" />
               <Button onClick={fetchArusKas} disabled={loading}>
                 {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Tampilkan
@@ -579,40 +647,77 @@ function renderArusKasSection(title: string, colorClass: string, items: ArusKasI
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">Tidak ada transaksi</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Tanggal</th>
-                  <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Keterangan</th>
-                  <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Masuk</th>
-                  <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Keluar</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item, idx) => (
-                  <tr key={idx} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
-                    <td className="py-2 px-3 text-muted-foreground">{item.tanggal}</td>
-                    <td className="py-2 px-3">
-                      <p className="font-medium text-foreground">{item.keterangan}</p>
-                      <p className="text-[10px] text-muted-foreground">{item.akun}</p>
-                    </td>
-                    <td className="py-2 px-3 text-right text-emerald-600 font-medium">
-                      {item.masuk > 0 ? formatRupiah(item.masuk) : "-"}
-                    </td>
-                    <td className="py-2 px-3 text-right text-red-600 font-medium">
-                      {item.keluar > 0 ? formatRupiah(item.keluar) : "-"}
-                    </td>
+          <>
+            {/* Desktop Table */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Tanggal</th>
+                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Keterangan</th>
+                    <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Masuk</th>
+                    <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Keluar</th>
                   </tr>
-                ))}
-                <tr className="border-t-2 border-foreground/20 font-semibold">
-                  <td colSpan={2} className="py-3 px-3 text-foreground">Subtotal {title}</td>
-                  <td className="py-3 px-3 text-right text-emerald-600">{formatRupiah(total.masuk)}</td>
-                  <td className="py-3 px-3 text-right text-red-600">{formatRupiah(total.keluar)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {items.map((item, idx) => (
+                    <tr key={`${item.tanggal}-${item.keterangan}-${idx}`} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
+                      <td className="py-2 px-3 text-muted-foreground">{item.tanggal}</td>
+                      <td className="py-2 px-3">
+                        <p className="font-medium text-foreground">{item.keterangan}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.akun}</p>
+                      </td>
+                      <td className="py-2 px-3 text-right text-emerald-600 font-medium">
+                        {item.masuk > 0 ? formatRupiah(item.masuk) : "-"}
+                      </td>
+                      <td className="py-2 px-3 text-right text-red-600 font-medium">
+                        {item.keluar > 0 ? formatRupiah(item.keluar) : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-foreground/20 font-semibold">
+                    <td colSpan={2} className="py-3 px-3 text-foreground">Subtotal {title}</td>
+                    <td className="py-3 px-3 text-right text-emerald-600">{formatRupiah(total.masuk)}</td>
+                    <td className="py-3 px-3 text-right text-red-600">{formatRupiah(total.keluar)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-3">
+              {items.map((item, idx) => (
+                <div key={`${item.tanggal}-${item.keterangan}-${idx}`} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">{item.tanggal}</p>
+                      <p className="font-medium text-foreground mt-0.5">{item.keterangan}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.akun}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Masuk</p>
+                      <p className="font-medium text-emerald-600">{item.masuk > 0 ? formatRupiah(item.masuk) : "-"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Keluar</p>
+                      <p className="font-medium text-red-600">{item.keluar > 0 ? formatRupiah(item.keluar) : "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="p-4 rounded-xl bg-muted/50 border border-border">
+                <div className="flex items-center justify-between font-semibold">
+                  <span className="text-sm">Subtotal {title}</span>
+                  <div className="flex gap-4">
+                    <span className="text-sm text-emerald-600">{formatRupiah(total.masuk)}</span>
+                    <span className="text-sm text-red-600">{formatRupiah(total.keluar)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
         )}
         <div className="flex justify-end pt-2 border-t border-border/50 mt-1">
           <span className={`text-sm font-bold ${total.total >= 0 ? "text-emerald-600" : "text-red-600"}`}>

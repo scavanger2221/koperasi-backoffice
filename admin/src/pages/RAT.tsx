@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Calendar,
@@ -139,6 +139,16 @@ export default function RATPage() {
   const [voteCounts, setVoteCounts] = useState<Record<string, { setuju: number; tolak: number; ditunda: number }>>({});
   const [voteNotes, setVoteNotes] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    if (dialog !== "detail") {
+      setKehadiranInput({});
+      setSuratKuasaInput({});
+      setVoteResults({});
+      setVoteCounts({});
+      setVoteNotes({});
+    }
+  }, [dialog]);
+
   // Edit mode for RAT detail
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({ tanggalRAT: "", tempat: "" });
@@ -147,24 +157,28 @@ export default function RATPage() {
   const { data: listData, isLoading } = useQuery({
     queryKey: ["rat"],
     queryFn: () => api<{ data: RatItem[] }>("/api/rat"),
+    staleTime: 30_000,
   });
 
   const { data: detailData } = useQuery({
     queryKey: ["rat", selectedId],
     queryFn: () => api<{ data: RatDetail }>(`/api/rat/${selectedId}`),
     enabled: !!selectedId,
+    staleTime: 30_000,
   });
 
   const { data: anggotaData } = useQuery({
     queryKey: ["rat-anggota-aktif"],
     queryFn: () => api<{ data: AnggotaAktif[] }>("/api/rat/anggota-aktif"),
     enabled: dialog === "detail" && !!selectedId && isAdmin,
+    staleTime: 30_000,
   });
 
   const { data: dokumenData } = useQuery({
     queryKey: ["rat-dokumen", selectedId, selectedDokumen?.id],
     queryFn: () => api<{ data: DokumenItem }>(`/api/rat/${selectedId}/dokumen/${selectedDokumen?.id}`),
     enabled: dialog === "viewDoc" && !!selectedId && !!selectedDokumen?.id,
+    staleTime: 30_000,
   });
 
   const detail: RatDetail | null = detailData?.data ?? null;
@@ -372,7 +386,7 @@ export default function RATPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">RAT (Rapat Anggota Tahunan)</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">RAT (Rapat Anggota Tahunan)</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Kelola Rapat Anggota Tahunan — forum tertinggi koperasi
           </p>
@@ -673,7 +687,7 @@ export default function RATPage() {
 
               {/* Tabs */}
               <Tabs defaultValue="agenda" className="mt-4">
-                <TabsList>
+                <TabsList className="flex-wrap">
                   <TabsTrigger value="agenda">
                     <FileText className="w-4 h-4 mr-1.5" />
                     Agenda & Voting
@@ -717,7 +731,7 @@ export default function RATPage() {
                       {detail.agendaList.map((agenda, idx) => (
                         <Card key={agenda.id}>
                           <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
                               <div className="flex items-start gap-3 flex-1">
                                 <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
                                   {idx + 1}

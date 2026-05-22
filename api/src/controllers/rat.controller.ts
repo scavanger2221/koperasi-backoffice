@@ -3,7 +3,9 @@ import { ratService } from "../services/rat.service.js";
 
 export const ratController = {
   async list(c: Context) {
-    const result = await ratService.list();
+    const page = Number(c.req.query("page")) || 1;
+    const limit = Number(c.req.query("limit")) || 20;
+    const result = await ratService.list({ page, limit });
     return c.json({ success: true, ...result });
   },
 

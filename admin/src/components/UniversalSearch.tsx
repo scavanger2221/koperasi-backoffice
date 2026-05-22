@@ -83,9 +83,6 @@ export function UniversalSearch() {
       e.preventDefault();
       setOpen((prev) => !prev);
     }
-    if (e.key === "Escape") {
-      setOpen(false);
-    }
   }, []);
 
   useEffect(() => {
@@ -118,8 +115,8 @@ export function UniversalSearch() {
     ([a], [b]) => (typeConfig[a]?.order ?? 99) - (typeConfig[b]?.order ?? 99)
   );
 
-  // Flatten for keyboard nav
-  const allItems: SearchResult[] = results;
+  // Flatten for keyboard nav — must match rendering order (grouped → sorted by type)
+  const allItems: SearchResult[] = sortedTypes.flatMap(([, items]) => items);
 
   const onSelect = (url: string) => {
     setOpen(false);
@@ -127,15 +124,18 @@ export function UniversalSearch() {
   };
 
   const onInputKeyDown = (e: React.KeyboardEvent) => {
+    const maxIndex = isFallbackMode ? fallbackNavItems.length - 1 : allItems.length - 1;
+    if (maxIndex < 0) return;
+
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelected((i) => Math.min(i + 1, allItems.length - 1));
+      setSelected((i) => i < maxIndex ? i + 1 : 0);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelected((i) => Math.max(i - 1, 0));
+      setSelected((i) => i > 0 ? i - 1 : maxIndex);
     } else if (e.key === "Enter") {
       e.preventDefault();
-      if (!shouldSearch && fallbackNavItems[selected]) {
+      if (isFallbackMode && fallbackNavItems[selected]) {
         onSelect(fallbackNavItems[selected].path);
       } else if (allItems[selected]) {
         onSelect(allItems[selected].url);
@@ -161,7 +161,7 @@ export function UniversalSearch() {
 
       {/* Search dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="p-0 gap-0 border-0 shadow-2xl max-w-lg overflow-hidden bg-card">
+        <DialogContent className="pt-4 p-0 border-0 shadow-2xl max-w-lg overflow-hidden bg-card">
           <DialogTitle className="sr-only">Pencarian Universal</DialogTitle>
 
           {/* Search input */}
@@ -179,9 +179,6 @@ export function UniversalSearch() {
               placeholder="Cari anggota, pinjaman, jurnal..."
               className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground"
             />
-            <kbd className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
-              ESC
-            </kbd>
           </div>
 
           {/* Results */}
@@ -231,7 +228,7 @@ export function UniversalSearch() {
                   const Icon = cfg.icon;
 
                   // Compute flat indices for highlighting
-                  const startIdx = results.indexOf(items[0]);
+                  const startIdx = allItems.indexOf(items[0]);
 
                   return (
                     <div key={type}>

@@ -127,6 +127,7 @@ export default function SHUPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["shu"],
     queryFn: () => api<{ data: ShuItem[] }>("/api/shu"),
+    staleTime: 30_000,
   });
 
   const hitungMutation = useMutation({
@@ -192,6 +193,7 @@ export default function SHUPage() {
     queryKey: ["shu-detail", selected?.id],
     queryFn: () => api<{ data: ShuDetail }>(`/api/shu/${selected!.id}`),
     enabled: !!selected && detailOpen,
+    staleTime: 30_000,
   });
 
   const openDetail = (s: ShuItem) => {

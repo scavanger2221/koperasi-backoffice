@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BookOpen, Loader2, ArrowDownLeft, ArrowUpRight, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,12 +42,15 @@ export default function BukuKasPage() {
     queryKey: ["buku-kas", filter],
     queryFn: () =>
       api<{ data: BukuKasItem[] }>(`/api/jurnal/buku-kas?${range.mulai ? `tanggalMulai=${range.mulai}&tanggalSelesai=${range.selesai}` : ""}`),
+    staleTime: 30_000,
   });
 
   const items = data?.data ?? [];
-  const totalDebit = items.reduce((acc, i) => acc + Number(i.debit), 0);
-  const totalKredit = items.reduce((acc, i) => acc + Number(i.kredit), 0);
-  const saldoAkhir = items.length > 0 ? items[items.length - 1].saldo : 0;
+  const { totalDebit, totalKredit, saldoAkhir } = useMemo(() => ({
+    totalDebit: items.reduce((acc, i) => acc + Number(i.debit), 0),
+    totalKredit: items.reduce((acc, i) => acc + Number(i.kredit), 0),
+    saldoAkhir: items.length > 0 ? items[items.length - 1].saldo : 0,
+  }), [items]);
 
   const exportCSV = () => {
     const headers = ["Tanggal", "No Jurnal", "Keterangan", "Debit", "Kredit", "Saldo"];
@@ -78,7 +81,7 @@ export default function BukuKasPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Buku Kas</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Buku Kas</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Pencatatan transaksi kas masuk dan keluar</p>
       </div>
 
@@ -144,69 +147,112 @@ export default function BukuKasPage() {
         ))}
       </div>
 
-      {/* Table */}
-      <Card className="border border-border shadow-sm" noHover>
-        <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-semibold text-foreground">Daftar Transaksi Kas</span>
+      {/* Desktop Table */}
+      <div className="hidden lg:block">
+        <Card className="border border-border shadow-sm" noHover>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">Daftar Transaksi Kas</span>
+            </div>
+            {items.length > 0 && (
+              <button
+                onClick={exportCSV}
+                className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export CSV
+              </button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Tanggal</th>
+                      <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">No Jurnal</th>
+                      <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Keterangan</th>
+                      <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Debit</th>
+                      <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Kredit</th>
+                      <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr key={item.id} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
+                        <td className="py-3 px-3 text-foreground">{new Date(item.tanggal).toLocaleDateString("id-ID")}</td>
+                        <td className="py-3 px-3 font-medium text-foreground">{item.noJurnal}</td>
+                        <td className="py-3 px-3 text-foreground">{item.keterangan}</td>
+                        <td className="py-3 px-3 text-right text-emerald-400 font-medium">
+                          {Number(item.debit) > 0 ? formatRupiah(item.debit) : "-"}
+                        </td>
+                        <td className="py-3 px-3 text-right text-red-400 font-medium">
+                          {Number(item.kredit) > 0 ? formatRupiah(item.kredit) : "-"}
+                        </td>
+                        <td className="py-3 px-3 text-right font-bold text-foreground">{formatRupiah(item.saldo)}</td>
+                      </tr>
+                    ))}
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-muted-foreground text-sm">
+                          Tidak ada transaksi kas
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Mobile Cards */}
+      <div className="lg:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
-          {items.length > 0 && (
-            <button
-              onClick={exportCSV}
-              className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export CSV
-            </button>
-          )}
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Tanggal</th>
-                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">No Jurnal</th>
-                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Keterangan</th>
-                    <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Debit</th>
-                    <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Kredit</th>
-                    <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Saldo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((item) => (
-                    <tr key={item.id} className="border-b border-border/50 hover:bg-muted/60 transition-colors">
-                      <td className="py-3 px-3 text-foreground">{new Date(item.tanggal).toLocaleDateString("id-ID")}</td>
-                      <td className="py-3 px-3 font-medium text-foreground">{item.noJurnal}</td>
-                      <td className="py-3 px-3 text-foreground">{item.keterangan}</td>
-                      <td className="py-3 px-3 text-right text-emerald-400 font-medium">
-                        {Number(item.debit) > 0 ? formatRupiah(item.debit) : "-"}
-                      </td>
-                      <td className="py-3 px-3 text-right text-red-400 font-medium">
-                        {Number(item.kredit) > 0 ? formatRupiah(item.kredit) : "-"}
-                      </td>
-                      <td className="py-3 px-3 text-right font-bold text-foreground">{formatRupiah(item.saldo)}</td>
-                    </tr>
-                  ))}
-                  {items.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-muted-foreground text-sm">
-                        Tidak ada transaksi kas
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        ) : (
+          <>
+            {items.map((item) => (
+              <div key={item.id} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{new Date(item.tanggal).toLocaleDateString("id-ID")}</p>
+                    <p className="font-semibold text-foreground mt-0.5">{item.noJurnal}</p>
+                  </div>
+                  <span className="text-sm font-bold text-foreground">{formatRupiah(item.saldo)}</span>
+                </div>
+                <p className="text-sm text-foreground mt-2">{item.keterangan}</p>
+                <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Debit</p>
+                    <p className="font-medium text-emerald-600">
+                      {Number(item.debit) > 0 ? formatRupiah(item.debit) : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Kredit</p>
+                    <p className="font-medium text-red-600">
+                      {Number(item.kredit) > 0 ? formatRupiah(item.kredit) : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {items.length === 0 && (
+              <div className="py-12 text-center text-muted-foreground text-sm">Tidak ada transaksi kas</div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

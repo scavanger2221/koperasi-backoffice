@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
 import { api } from "@/lib/api";
 import { rules, validate, type FieldErrors } from "@/lib/validation";
@@ -68,6 +69,8 @@ export default function UsersPage() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ id: string; aktif: boolean } | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -79,6 +82,7 @@ export default function UsersPage() {
       return res;
     },
     placeholderData: (prev) => prev,
+    staleTime: 30_000,
   });
 
   const createMutation = useMutation({
@@ -124,6 +128,11 @@ export default function UsersPage() {
     setDialog("edit");
   };
 
+  const handleToggle = (id: string, aktif: boolean) => {
+    setConfirmTarget({ id, aktif: !aktif });
+    setConfirmOpen(true);
+  };
+
   const handleCreate = () => {
     const errs = validate(form, {
       nama: [rules.required("Nama"), rules.minLength(3, "Nama")],
@@ -152,7 +161,7 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Pengguna</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Pengguna</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Kelola akun pengurus & karyawan koperasi</p>
         </div>
         <Dialog open={dialog === "create"} onOpenChange={(v) => { setDialog(v ? "create" : null); if (!v) { setErrors({}); setForm({ email: "", password: "", nama: "", role: "pengurus" }); } }}>
@@ -282,7 +291,7 @@ export default function UsersPage() {
                                   variant="ghost"
                                   size="icon"
                                   className={`w-8 h-8 ${user.aktif ? "text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30" : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"}`}
-                                  onClick={() => toggleMutation.mutate({ id: user.id, aktif: !user.aktif })}
+                                  onClick={() => handleToggle(user.id, user.aktif)}
                                   title={user.aktif ? "Nonaktifkan" : "Aktifkan"}
                                 >
                                   {user.aktif ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
@@ -305,7 +314,7 @@ export default function UsersPage() {
                 {data?.data?.map((user) => {
                   const roleCfg = roleConfig[user.role] || roleConfig.anggota;
                   return (
-                    <div key={user.id} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+                    <div key={user.id} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold">
@@ -327,19 +336,19 @@ export default function UsersPage() {
                           </Badge>
                         </div>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="w-8 h-8" onClick={() => openEdit(user)}>
+                          <Button variant="ghost" size="icon" className="w-10 h-10" onClick={() => openEdit(user)}>
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
-                          {user.role !== "super_admin" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="w-8 h-8"
-                              onClick={() => toggleMutation.mutate({ id: user.id, aktif: !user.aktif })}
-                            >
-                              {user.aktif ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
-                            </Button>
-                          )}
+                            {user.role !== "super_admin" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="w-10 h-10"
+                                onClick={() => handleToggle(user.id, user.aktif)}
+                              >
+                                {user.aktif ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+                              </Button>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -401,6 +410,25 @@ export default function UsersPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm toggle dialog */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={confirmTarget?.aktif ? "Aktifkan Pengguna?" : "Nonaktifkan Pengguna?"}
+        description={confirmTarget?.aktif
+          ? "Pengguna akan dapat login ke sistem kembali."
+          : "Pengguna akan kehilangan akses ke sistem. Operasi ini dapat dibatalkan dengan mengaktifkan kembali."
+        }
+        confirmLabel="Ya, Lanjutkan"
+        variant="warning"
+        onConfirm={() => {
+          if (confirmTarget) {
+            toggleMutation.mutate({ id: confirmTarget.id, aktif: confirmTarget.aktif });
+          }
+        }}
+        disabled={toggleMutation.isPending}
+      />
     </div>
   );
 }

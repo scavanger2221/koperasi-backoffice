@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
 import { api } from "@/lib/api";
 import { rules, validate, type FieldErrors } from "@/lib/validation";
@@ -56,12 +57,15 @@ export default function PeriodeBukuPage() {
     keterangan: "",
   });
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ type: "tutup" | "buka" | "hapus"; id: string } | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: ["periode-buku"],
     queryFn: () => api<{ data: PeriodeBukuItem[] }>("/api/periode-buku"),
+    staleTime: 30_000,
   });
 
   const createMutation = useMutation({
@@ -127,12 +131,27 @@ export default function PeriodeBukuPage() {
     createMutation.mutate();
   };
 
+  const confirmAction = () => {
+    if (!confirmTarget) return;
+    switch (confirmTarget.type) {
+      case "tutup":
+        tutupMutation.mutate(confirmTarget.id);
+        break;
+      case "buka":
+        bukaMutation.mutate(confirmTarget.id);
+        break;
+      case "hapus":
+        hapusMutation.mutate(confirmTarget.id);
+        break;
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">
             Periode Buku
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -276,7 +295,10 @@ export default function PeriodeBukuPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="w-8 h-8 text-muted-foreground hover:text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-950/30"
-                                  onClick={() => tutupMutation.mutate(p.id)}
+                                  onClick={() => {
+                                    setConfirmTarget({ type: "tutup", id: p.id });
+                                    setConfirmOpen(true);
+                                  }}
                                   title="Tutup Buku"
                                 >
                                   <Lock className="w-3.5 h-3.5" />
@@ -286,7 +308,10 @@ export default function PeriodeBukuPage() {
                                   variant="ghost"
                                   size="icon"
                                   className="w-8 h-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                                  onClick={() => bukaMutation.mutate(p.id)}
+                                  onClick={() => {
+                                    setConfirmTarget({ type: "buka", id: p.id });
+                                    setConfirmOpen(true);
+                                  }}
                                   title="Buka Buku"
                                 >
                                   <LockOpen className="w-3.5 h-3.5" />
@@ -298,9 +323,8 @@ export default function PeriodeBukuPage() {
                                   size="icon"
                                   className="w-8 h-8 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
                                   onClick={() => {
-                                    if (confirm("Hapus periode buku ini?")) {
-                                      hapusMutation.mutate(p.id);
-                                    }
+                                    setConfirmTarget({ type: "hapus", id: p.id });
+                                    setConfirmOpen(true);
                                   }}
                                   title="Hapus"
                                 >
@@ -330,7 +354,7 @@ export default function PeriodeBukuPage() {
                   return (
                     <div
                       key={p.id}
-                      className="p-4 rounded-xl bg-card border border-border shadow-sm"
+                      className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform"
                     >
                       <div className="flex items-start justify-between">
                         <div>
@@ -353,44 +377,49 @@ export default function PeriodeBukuPage() {
                           {p.keterangan}
                         </div>
                       )}
-                      <div className="mt-3 flex gap-2">
-                        {p.status === "buka" ? (
-                          <>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {p.status === "buka" ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-auto h-10 text-xs text-slate-600 border-slate-200 dark:border-slate-900"
+                                onClick={() => {
+                                  setConfirmTarget({ type: "tutup", id: p.id });
+                                  setConfirmOpen(true);
+                                }}
+                              >
+                                <Lock className="w-3 h-3 mr-1" />
+                                Tutup Buku
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-auto h-10 text-xs text-red-600 border-red-200 dark:border-red-900"
+                                onClick={() => {
+                                  setConfirmTarget({ type: "hapus", id: p.id });
+                                  setConfirmOpen(true);
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                Hapus
+                              </Button>
+                            </>
+                          ) : (
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1 h-8 text-xs text-slate-600 border-slate-200 dark:border-slate-900"
-                              onClick={() => tutupMutation.mutate(p.id)}
-                            >
-                              <Lock className="w-3 h-3 mr-1" />
-                              Tutup Buku
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 h-8 text-xs text-red-600 border-red-200 dark:border-red-900"
+                              className="flex-auto h-10 text-xs text-emerald-600 border-emerald-200 dark:border-emerald-900"
                               onClick={() => {
-                                if (confirm("Hapus periode buku ini?")) {
-                                  hapusMutation.mutate(p.id);
-                                }
+                                setConfirmTarget({ type: "buka", id: p.id });
+                                setConfirmOpen(true);
                               }}
                             >
-                              <Trash2 className="w-3 h-3 mr-1" />
-                              Hapus
+                              <LockOpen className="w-3 h-3 mr-1" />
+                              Buka Buku
                             </Button>
-                          </>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 h-8 text-xs text-emerald-600 border-emerald-200 dark:border-emerald-900"
-                            onClick={() => bukaMutation.mutate(p.id)}
-                          >
-                            <LockOpen className="w-3 h-3 mr-1" />
-                            Buka Buku
-                          </Button>
-                        )}
-                      </div>
+                          )}
+                        </div>
                     </div>
                   );
                 })}
@@ -404,6 +433,30 @@ export default function PeriodeBukuPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Confirm action dialog */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={(v) => { setConfirmOpen(v); if (!v) setConfirmTarget(null); }}
+        title={
+          confirmTarget?.type === "tutup"
+            ? "Tutup Periode Buku?"
+            : confirmTarget?.type === "buka"
+            ? "Buka Periode Buku?"
+            : "Hapus Periode Buku?"
+        }
+        description={
+          confirmTarget?.type === "tutup"
+            ? "Periode buku akan ditutup. Transaksi tidak dapat ditambahkan ke periode ini setelah ditutup."
+            : confirmTarget?.type === "buka"
+            ? "Periode buku akan dibuka kembali. Transaksi dapat ditambahkan kembali."
+            : "Periode buku akan dihapus. Data yang terhapus tidak dapat dikembalikan."
+        }
+        confirmLabel="Ya, Lanjutkan"
+        variant={confirmTarget?.type === "hapus" ? "destructive" : confirmTarget?.type === "tutup" ? "warning" : "info"}
+        onConfirm={confirmAction}
+        disabled={tutupMutation.isPending || bukaMutation.isPending || hapusMutation.isPending}
+      />
     </div>
   );
 }

@@ -6,13 +6,18 @@ import { shu, shuAnggota, anggota, simpanan, pinjaman } from "../../database/sch
 import { getLabaRugi } from "./jurnal.service.js";
 
 export class ShuService {
-  async list() {
+  async list({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}) {
+    const offset = (page - 1) * limit;
     const data = await db
       .select()
       .from(shu)
-      .orderBy(desc(shu.periode));
+      .orderBy(desc(shu.periode))
+      .limit(limit)
+      .offset(offset);
 
-    return { data };
+    const total = await db.$count(shu);
+
+    return { data, meta: { page, limit, total } };
   }
 
   async getById(id: string) {
@@ -105,35 +110,34 @@ export class ShuService {
       throw new HTTPException(400, { message: "Tidak ada anggota aktif" });
     }
 
-    // Get total simpanan for all active members
-    let totalSimpananAll = 0;
+    // Get total simpanan for all active members (single GROUP BY query)
+    const memberIds = activeMembers.map(m => m.id);
+    const simpananRows = db.all<{ anggotaId: string; total: number }>(sql`
+      SELECT anggota_id as anggotaId, SUM(CAST(jumlah AS INTEGER)) as total
+      FROM simpanan
+      WHERE anggota_id IN (${sql.join(memberIds.map(id => sql`${id}`))})
+      GROUP BY anggota_id
+    `);
     const simpananPerAnggota: Record<string, number> = {};
-
-    for (const member of activeMembers) {
-      const rows = db.all<{ total: string }>(sql`
-        SELECT SUM(CAST(jumlah AS INTEGER)) as total
-        FROM simpanan
-        WHERE anggota_id = ${member.id}
-      `);
-      const total = Number(rows[0]?.total ?? 0);
-      simpananPerAnggota[member.id] = total;
-      totalSimpananAll += total;
+    let totalSimpananAll = 0;
+    for (const r of simpananRows) {
+      simpananPerAnggota[r.anggotaId] = r.total;
+      totalSimpananAll += r.total;
     }
 
-    // Get total transaksi (pinjaman + angsuran) for each member
-    let totalTransaksiAll = 0;
+    // Get total transaksi for each member (single GROUP BY query)
+    const transaksiRows = db.all<{ anggotaId: string; total: number }>(sql`
+      SELECT anggota_id as anggotaId, SUM(CAST(jumlah AS INTEGER)) as total
+      FROM pinjaman
+      WHERE anggota_id IN (${sql.join(memberIds.map(id => sql`${id}`))})
+        AND status IN ('aktif', 'lunas', 'macet')
+      GROUP BY anggota_id
+    `);
     const transaksiPerAnggota: Record<string, number> = {};
-
-    for (const member of activeMembers) {
-      const rows = db.all<{ total: string }>(sql`
-        SELECT SUM(CAST(jumlah AS INTEGER)) as total
-        FROM pinjaman
-        WHERE anggota_id = ${member.id}
-          AND status IN ('aktif', 'lunas', 'macet')
-      `);
-      const total = Number(rows[0]?.total ?? 0);
-      transaksiPerAnggota[member.id] = total;
-      totalTransaksiAll += total;
+    let totalTransaksiAll = 0;
+    for (const r of transaksiRows) {
+      transaksiPerAnggota[r.anggotaId] = r.total;
+      totalTransaksiAll += r.total;
     }
 
     // Step 5: Create SHU record

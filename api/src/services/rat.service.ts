@@ -7,9 +7,17 @@ import { getNeraca, getLabaRugi, getArusKas } from "./jurnal.service.js";
 
 class RatService {
   // ── List all RAT ──
-  async list() {
-    const data = await db.select().from(rat).orderBy(desc(rat.periode));
-    return { data };
+  async list({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}) {
+    const offset = (page - 1) * limit;
+    const data = await db
+      .select()
+      .from(rat)
+      .orderBy(desc(rat.periode))
+      .limit(limit)
+      .offset(offset);
+
+    const total = await db.$count(rat);
+    return { data, meta: { page, limit, total } };
   }
 
   // ── Get detail RAT by ID ──
@@ -124,13 +132,13 @@ class RatService {
       "RAPB Tahun Berikutnya",
     ];
 
-    for (const judul of defaultAgenda) {
-      await db.insert(ratAgenda).values({
+    await db.insert(ratAgenda).values(
+      defaultAgenda.map((judul) => ({
         id: crypto.randomUUID(),
         ratId: id,
         judul,
-      });
-    }
+      }))
+    );
 
     await db.update(rat).set({ status: "dipublikasi" }).where(eq(rat.id, id));
     return this.getById(id);
@@ -211,15 +219,15 @@ class RatService {
 
     await db.delete(ratKehadiran).where(eq(ratKehadiran.ratId, ratId));
 
-    for (const k of kehadiranList) {
-      await db.insert(ratKehadiran).values({
+    await db.insert(ratKehadiran).values(
+      kehadiranList.map((k) => ({
         id: crypto.randomUUID(),
         ratId,
         anggotaId: k.anggotaId,
         hadir: k.hadir,
         suratKuasa: k.suratKuasa ?? false,
-      });
-    }
+      }))
+    );
 
     const allKehadiran = await db
       .select()
@@ -360,8 +368,8 @@ class RatService {
       .from(ratAgenda)
       .where(eq(ratAgenda.ratId, id));
 
-    for (const a of oldAgenda) {
-      await db.insert(ratAgenda).values({
+    await db.insert(ratAgenda).values(
+      oldAgenda.map((a) => ({
         id: crypto.randomUUID(),
         ratId: newId,
         judul: a.judul,
@@ -370,8 +378,8 @@ class RatService {
         suaraTolak: 0,
         suaraDitunda: 0,
         catatan: null,
-      });
-    }
+      }))
+    );
 
     return this.getById(newId);
   }

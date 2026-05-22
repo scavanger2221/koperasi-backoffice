@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Loader2, UserX, UserCheck, Pencil, Users, ChevronRight, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
 import { api } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
@@ -35,47 +36,61 @@ interface AnggotaItem {
 
 function KartuAnggota({ a }: { a: AnggotaItem }) {
   return (
-    <div className="w-[340px] mx-auto bg-card text-foreground rounded-xl border-2 border-primary overflow-hidden shadow-lg print:shadow-none print:border-gray-800">
-      <div className="bg-primary text-primary-foreground px-5 py-4 print:bg-gray-800 print:text-white print:-webkit-print-color-adjust-exact">
-        <p className="text-xs font-medium opacity-90">KARTU ANGGOTA KOPERASI</p>
-        <p className="text-lg font-bold mt-0.5">Koperasi Backoffice</p>
-      </div>
-      <div className="p-5 space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-full bg-primary/15 flex items-center justify-center text-primary text-xl font-bold print:bg-gray-200 print:text-gray-800">
-            {a.nama.charAt(0)}
-          </div>
+    <div className="w-full mx-auto bg-card text-foreground rounded-xl border-2 border-primary overflow-hidden shadow-lg print:shadow-none print:border-gray-800 print:bg-white">
+      <div className="bg-primary text-primary-foreground px-6 py-4 print:bg-gray-800 print:text-white" style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+        <div className="flex items-center justify-between">
           <div>
-            <p className="font-bold text-lg leading-tight">{a.nama}</p>
-            <p className="text-sm text-muted-foreground">{a.noAnggota}</p>
+            <p className="text-xs font-medium opacity-90 print:opacity-100">KARTU ANGGOTA KOPERASI</p>
+            <p className="text-xl font-bold mt-0.5">Koperasi Backoffice</p>
+          </div>
+          <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center print:bg-white print:text-gray-800" style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-10 h-10 text-white print:text-gray-800">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
           </div>
         </div>
-        <div className="space-y-1.5 text-sm">
-          <div className="flex justify-between border-b border-border pb-1">
-            <span className="text-muted-foreground">NIK</span>
-            <span className="font-medium">{a.nik}</span>
+      </div>
+
+      <div className="p-6">
+        <div className="flex gap-6">
+          <div className="flex-shrink-0">
+            <div className="w-24 h-24 rounded-full bg-primary/15 flex items-center justify-center text-primary text-3xl font-bold print:bg-green-100 print:text-green-800" style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}>
+              {a.nama.charAt(0)}
+            </div>
+            <p className="text-center font-bold text-lg mt-2 leading-tight">{a.nama}</p>
+            <p className="text-center text-sm text-muted-foreground print:text-gray-600">{a.noAnggota}</p>
           </div>
-          <div className="flex justify-between border-b border-border pb-1">
-            <span className="text-muted-foreground">Telp</span>
-            <span className="font-medium">{a.noTelepon}</span>
-          </div>
-          <div className="flex justify-between border-b border-border pb-1">
-            <span className="text-muted-foreground">Alamat</span>
-            <span className="font-medium text-right max-w-[180px] truncate">{a.alamat}</span>
-          </div>
-          <div className="flex justify-between border-b border-border pb-1">
-            <span className="text-muted-foreground">Tgl Daftar</span>
-            <span className="font-medium">{formatDate(a.tanggalDaftar)}</span>
-          </div>
-          <div className="flex justify-between pt-0.5">
-            <span className="text-muted-foreground">Status</span>
-            <span className={`font-bold ${a.status === "aktif" ? "text-primary print:text-gray-800" : "text-muted-foreground"}`}>
-              {a.status === "aktif" ? "AKTIF" : a.status.toUpperCase()}
-            </span>
+
+          <div className="flex-1 space-y-2 text-sm">
+            <div className="flex justify-between border-b border-border pb-1.5">
+              <span className="text-muted-foreground print:text-gray-600">NIK</span>
+              <span className="font-medium">{a.nik}</span>
+            </div>
+            <div className="flex justify-between border-b border-border pb-1.5">
+              <span className="text-muted-foreground print:text-gray-600">Telp</span>
+              <span className="font-medium">{a.noTelepon}</span>
+            </div>
+            <div className="flex justify-between border-b border-border pb-1.5">
+              <span className="text-muted-foreground print:text-gray-600">Alamat</span>
+              <span className="font-medium text-right max-w-[260px] truncate">{a.alamat}</span>
+            </div>
+            <div className="flex justify-between border-b border-border pb-1.5">
+              <span className="text-muted-foreground print:text-gray-600">Tgl Daftar</span>
+              <span className="font-medium">{formatDate(a.tanggalDaftar)}</span>
+            </div>
+            <div className="flex justify-between pt-1">
+              <span className="text-muted-foreground print:text-gray-600">Status</span>
+              <span className={`font-bold ${a.status === "aktif" ? "text-primary print:text-green-800" : "text-muted-foreground print:text-gray-600"}`}>
+                {a.status === "aktif" ? "AKTIF" : a.status.toUpperCase()}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="pt-2 border-t border-dashed border-border">
-          <p className="text-[10px] text-center text-muted-foreground">Kartu ini adalah milik anggota koperasi. Jika ditemukan, mohon dikembalikan ke kantor koperasi.</p>
+
+        <div className="mt-5 pt-3 border-t border-dashed border-border print:border-gray-400">
+          <p className="text-[10px] text-center text-muted-foreground print:text-gray-500">
+            Kartu ini adalah milik anggota koperasi. Jika ditemukan, mohon dikembalikan ke kantor koperasi.
+          </p>
         </div>
       </div>
     </div>
@@ -84,6 +99,11 @@ function KartuAnggota({ a }: { a: AnggotaItem }) {
 
 export default function Anggota() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [printOpen, setPrintOpen] = useState(false);
@@ -91,6 +111,8 @@ export default function Anggota() {
   const [printId, setPrintId] = useState<string | null>(null);
   const [createErrors, setCreateErrors] = useState<FieldErrors>({});
   const [editErrors, setEditErrors] = useState<FieldErrors>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ id: string; action: "activate" | "deactivate" } | null>(null);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const queryClient = useQueryClient();
@@ -100,22 +122,25 @@ export default function Anggota() {
     queryKey: ["anggota-print", printId],
     queryFn: () => api<{ data: AnggotaItem }>(`/api/anggota/${printId}`),
     enabled: !!printId && printOpen,
+    staleTime: 30_000,
   });
 
   const { data, isLoading } = useQuery({
-    queryKey: ["anggota", search, page],
+    queryKey: ["anggota", debouncedSearch, page],
     queryFn: async () => {
-      const res = await api<{ data: AnggotaItem[]; meta: any }>(`/api/anggota?search=${encodeURIComponent(search)}&page=${page}&limit=20`);
+      const res = await api<{ data: AnggotaItem[]; meta: any }>(`/api/anggota?search=${encodeURIComponent(debouncedSearch)}&page=${page}&limit=20`);
       setTotal(res.meta?.total ?? 0);
       return res;
     },
     placeholderData: (prev) => prev,
+    staleTime: 30_000,
   });
 
   const { data: detailData } = useQuery({
     queryKey: ["anggota-detail", editingId],
     queryFn: () => api<{ data: AnggotaItem }>(`/api/anggota/${editingId}`),
     enabled: !!editingId && editOpen,
+    staleTime: 30_000,
   });
 
   const createMutation = useMutation({
@@ -243,16 +268,33 @@ export default function Anggota() {
 
   const handleToggle = (id: string, currentStatus: string) => {
     const action = currentStatus === "aktif" ? "deactivate" : "activate";
-    toggleMutation.mutate({ id, action });
+    setConfirmTarget({ id, action });
+    setConfirmOpen(true);
+  };
+
+  const confirmToggle = () => {
+    if (confirmTarget) {
+      toggleMutation.mutate({ id: confirmTarget.id, action: confirmTarget.action });
+    }
   };
 
   const handlePrint = () => {
     const style = document.createElement("style");
     style.innerHTML = `
       @media print {
+        @page { size: auto; margin: 0mm; }
         body * { visibility: hidden !important; }
         #print-card, #print-card * { visibility: visible !important; }
-        #print-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        #print-card {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 100%;
+          max-width: 800px;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -277,7 +319,7 @@ export default function Anggota() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Daftar Anggota</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Daftar Anggota</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Kelola data anggota koperasi</p>
         </div>
         <Dialog open={createOpen} onOpenChange={(v) => {
@@ -352,7 +394,7 @@ export default function Anggota() {
 
       {/* Print Dialog */}
       <Dialog open={printOpen} onOpenChange={setPrintOpen}>
-        <DialogContent className="max-w-md border-0 shadow-xl">
+        <DialogContent className="max-w-2xl border-0 shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-lg flex items-center gap-2">
               <Printer className="w-5 h-5 text-emerald-600" />
@@ -443,7 +485,7 @@ export default function Anggota() {
       </Dialog>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border border-border shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center">
@@ -461,7 +503,7 @@ export default function Anggota() {
               <ChevronRight className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{data?.data?.filter(a => a.status === "aktif").length ?? 0}</p>
+              <p className="text-2xl font-bold text-foreground">{useMemo(() => data?.data?.filter(a => a.status === "aktif").length ?? 0, [data?.data])}</p>
               <p className="text-xs text-muted-foreground">Anggota Aktif</p>
             </div>
           </CardContent>
@@ -472,7 +514,7 @@ export default function Anggota() {
               <ChevronRight className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{data?.data?.filter(a => a.status === "menunggu_verifikasi").length ?? 0}</p>
+              <p className="text-2xl font-bold text-foreground">{useMemo(() => data?.data?.filter(a => a.status === "menunggu_verifikasi").length ?? 0, [data?.data])}</p>
               <p className="text-xs text-muted-foreground">Menunggu Verifikasi</p>
             </div>
           </CardContent>
@@ -565,7 +607,7 @@ export default function Anggota() {
               {/* Mobile Cards */}
               <div className="lg:hidden space-y-3">
                 {data?.data?.map((a) => (
-                  <div key={a.id} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+                  <div key={a.id} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
@@ -588,19 +630,19 @@ export default function Anggota() {
                         <p className="text-foreground">{formatDate(a.tanggalDaftar)}</p>
                       </div>
                     </div>
-                    <div className="mt-3 flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => openEdit(a.id)}>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" className="flex-auto h-10 text-xs" onClick={() => openEdit(a.id)}>
                         <Pencil className="w-3 h-3 mr-1" />
                         Edit
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1 h-8 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:hover:bg-blue-950/30" onClick={() => openPrint(a.id)}>
+                      <Button variant="outline" size="sm" className="flex-auto h-10 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:hover:bg-blue-950/30" onClick={() => openPrint(a.id)}>
                         <Printer className="w-3 h-3 mr-1" />
                         Kartu
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        className={`flex-1 h-8 text-xs ${a.status === "aktif" ? "text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30" : "text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/30"}`}
+                        className={`flex-auto h-10 text-xs ${a.status === "aktif" ? "text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30" : "text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:bg-emerald-950/30"}`}
                         onClick={() => handleToggle(a.id, a.status)}
                       >
                         {a.status === "aktif" ? <UserX className="w-3 h-3 mr-1" /> : <UserCheck className="w-3 h-3 mr-1" />}
@@ -644,6 +686,20 @@ export default function Anggota() {
               )}
             </>
           )}
+
+          {/* Confirm toggle dialog */}
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            title={confirmTarget?.action === "deactivate" ? "Nonaktifkan Anggota?" : "Aktifkan Anggota?"}
+            description={confirmTarget?.action === "deactivate"
+              ? "Anggota yang dinonaktifkan tidak dapat mengakses sistem. Data transaksi tetap tersimpan."
+              : "Anggota akan dapat mengakses sistem kembali."
+            }
+            variant="warning"
+            onConfirm={confirmToggle}
+            disabled={toggleMutation.isPending}
+          />
         </CardContent>
       </Card>
     </div>

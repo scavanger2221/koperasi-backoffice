@@ -1,19 +1,25 @@
 import crypto from "crypto";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
-import { db } from "../lib/db.js";
+import { db, rawSqlite } from "../lib/db.js";
 import { jurnal, jurnalDetail, akun } from "../../database/schema/index.js";
 
+const akunIdCache = new Map<string, string>();
+
 async function getAkunId(kode: string): Promise<string | null> {
+  if (akunIdCache.has(kode)) return akunIdCache.get(kode) ?? null;
   const a = await db.select().from(akun).where(eq(akun.kode, kode)).get();
+  if (a) akunIdCache.set(kode, a.id);
   return a?.id ?? null;
 }
+
+let noJurnalCounter = 0;
 
 function generateNoJurnal(tanggal: string): string {
   const d = new Date(tanggal);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `JR${y}${m}${random}`;
+  noJurnalCounter++;
+  return `JR${y}${m}-${String(noJurnalCounter).padStart(4, "0")}`;
 }
 
 async function createJurnalEntry({
@@ -41,16 +47,20 @@ async function createJurnalEntry({
     refId: refId ?? null,
   });
 
+  // Resolve akun IDs (single batch query, then individual inserts)
+  const kodeSet = [...new Set(details.map(d => d.akunKode))];
+  const akunRows = db
+    .select({ id: akun.id, kode: akun.kode })
+    .from(akun)
+    .where(inArray(akun.kode, kodeSet))
+    .all();
+  const akunMap = new Map(akunRows.map(r => [r.kode, r.id]));
+
+  const insStmt = rawSqlite.prepare(`INSERT INTO jurnal_detail (id, jurnal_id, akun_id, debit, kredit) VALUES (?, ?, ?, ?, ?)`);
   for (const d of details) {
-    const akunId = await getAkunId(d.akunKode);
+    const akunId = akunMap.get(d.akunKode);
     if (!akunId) continue;
-    await db.insert(jurnalDetail).values({
-      id: crypto.randomUUID(),
-      jurnalId,
-      akunId,
-      debit: String(d.debit),
-      kredit: String(d.kredit),
-    });
+    insStmt.run(crypto.randomUUID(), jurnalId, akunId, String(d.debit), String(d.kredit));
   }
 
   return { jurnalId, noJurnal };
@@ -238,41 +248,34 @@ export async function getBukuBesar({
 }) {
   const offset = (page - 1) * limit;
 
-  let whereClause = `WHERE jd.akun_id = '${akunId}'`;
-  if (tanggalMulai && tanggalSelesai) {
-    whereClause += ` AND j.tanggal >= '${tanggalMulai}' AND j.tanggal <= '${tanggalSelesai}'`;
-  }
-
-  const akunInfo = await db.select().from(akun).where(eq(akun.id, akunId)).get();
-
-  const countRow = db.get<{ total: number }>(sql`
+  const total = db.get<{ total: number }>(sql`
     SELECT COUNT(*) as total
     FROM jurnal_detail jd
     INNER JOIN jurnal j ON jd.jurnal_id = j.id
-    ${sql.raw(whereClause)}
+    WHERE jd.akun_id = ${akunId}
+    ${tanggalMulai && tanggalSelesai ? sql`AND j.tanggal >= ${tanggalMulai} AND j.tanggal <= ${tanggalSelesai}` : sql``}
   `);
 
-  const allRows = db.all<{ id: string; tanggal: string; noJurnal: string; keterangan: string; debit: string; kredit: string }>(sql`
-    SELECT j.id, j.tanggal, j.no_jurnal as noJurnal, j.keterangan,
-           jd.debit, jd.kredit
-    FROM jurnal_detail jd
-    INNER JOIN jurnal j ON jd.jurnal_id = j.id
-    ${sql.raw(whereClause)}
-    ORDER BY j.tanggal ASC, j.created_at ASC
+  const data = db.all<{ id: string; tanggal: string; noJurnal: string; keterangan: string; debit: string; kredit: string; saldo: number }>(sql`
+    WITH ordered AS (
+      SELECT j.id, j.tanggal, j.no_jurnal as noJurnal, j.keterangan,
+             CAST(jd.debit AS INTEGER) as debit,
+             CAST(jd.kredit AS INTEGER) as kredit
+      FROM jurnal_detail jd
+      INNER JOIN jurnal j ON jd.jurnal_id = j.id
+      WHERE jd.akun_id = ${akunId}
+      ${tanggalMulai && tanggalSelesai ? sql`AND j.tanggal >= ${tanggalMulai} AND j.tanggal <= ${tanggalSelesai}` : sql``}
+    )
+    SELECT id, tanggal, noJurnal, keterangan, debit, kredit,
+           SUM(debit - kredit) OVER (ORDER BY tanggal ASC, id ASC) as saldo
+    FROM ordered
+    ORDER BY tanggal DESC, id DESC
+    LIMIT ${limit} OFFSET ${offset}
   `);
 
-  let saldo = 0;
-  const withSaldo = allRows.map((r) => {
-    saldo += Number(r.debit) - Number(r.kredit);
-    return { ...r, saldo };
-  });
+  const akunInfo = await db.select().from(akun).where(eq(akun.id, akunId)).get();
 
-  const total = Number(countRow?.total ?? 0);
-
-  // Apply pagination to reversed data (newest first)
-  const data = withSaldo.reverse().slice(offset, offset + limit);
-
-  return { data, meta: { page, limit, total }, akun: akunInfo };
+  return { data, meta: { page, limit, total: Number(total?.total ?? 0) }, akun: akunInfo };
 }
 
 export async function getNeracaSaldo({
@@ -483,48 +486,31 @@ export async function getBukuKas({
 
   const offset = (page - 1) * limit;
 
-  // Build WHERE clause manually for reliability
-  let whereClause = `WHERE jd.akun_id = '${kasId}'`;
-  if (tanggalMulai && tanggalSelesai) {
-    whereClause += ` AND j.tanggal >= '${tanggalMulai}' AND j.tanggal <= '${tanggalSelesai}'`;
-  }
-
-  const rows = db.all(sql`
-    SELECT j.id, j.tanggal, j.no_jurnal as noJurnal, j.keterangan,
-           jd.debit, jd.kredit
-    FROM jurnal_detail jd
-    INNER JOIN jurnal j ON jd.jurnal_id = j.id
-    ${sql.raw(whereClause)}
-    ORDER BY j.tanggal DESC, j.created_at DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `);
-
-  // Calculate running saldo (reverse order since we DESC)
   const countRow = db.get<{ total: number }>(sql`
     SELECT COUNT(*) as total
     FROM jurnal_detail jd
     INNER JOIN jurnal j ON jd.jurnal_id = j.id
-    ${sql.raw(whereClause)}
+    WHERE jd.akun_id = ${kasId}
+    ${tanggalMulai && tanggalSelesai ? sql`AND j.tanggal >= ${tanggalMulai} AND j.tanggal <= ${tanggalSelesai}` : sql``}
   `);
 
-  // Need to calculate saldo in chronological order then reverse
-  const allRows = db.all<{ id: string; tanggal: string; noJurnal: string; keterangan: string; debit: string; kredit: string }>(sql`
-    SELECT j.id, j.tanggal, j.no_jurnal as noJurnal, j.keterangan,
-           jd.debit, jd.kredit
-    FROM jurnal_detail jd
-    INNER JOIN jurnal j ON jd.jurnal_id = j.id
-    ${sql.raw(whereClause)}
-    ORDER BY j.tanggal ASC, j.created_at ASC
+  const data = db.all<{ id: string; tanggal: string; noJurnal: string; keterangan: string; debit: string; kredit: string; saldo: number }>(sql`
+    WITH ordered AS (
+      SELECT j.id, j.tanggal, j.no_jurnal as noJurnal, j.keterangan,
+             CAST(jd.debit AS INTEGER) as debit,
+             CAST(jd.kredit AS INTEGER) as kredit
+      FROM jurnal_detail jd
+      INNER JOIN jurnal j ON jd.jurnal_id = j.id
+      WHERE jd.akun_id = ${kasId}
+      ${tanggalMulai && tanggalSelesai ? sql`AND j.tanggal >= ${tanggalMulai} AND j.tanggal <= ${tanggalSelesai}` : sql``}
+    )
+    SELECT id, tanggal, noJurnal, keterangan, debit, kredit,
+           SUM(debit - kredit) OVER (ORDER BY tanggal ASC, id ASC) as saldo
+    FROM ordered
+    ORDER BY tanggal DESC, id DESC
+    LIMIT ${limit} OFFSET ${offset}
   `);
 
-  let saldo = 0;
-  const withSaldo = allRows.map((r) => {
-    saldo += Number(r.debit) - Number(r.kredit);
-    return { ...r, saldo };
-  });
-
-  // Reverse for display (newest first)
-  const data = withSaldo.reverse();
   const total = Number(countRow?.total ?? 0);
 
   return { data, meta: { page, limit, total } };

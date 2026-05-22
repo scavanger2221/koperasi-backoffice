@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { TrendingUp, Users, Wallet, HandCoins, AlertTriangle, Activity, BookOpen, Receipt, BarChart3, PiggyBank, Building2, ClipboardList, UserCog, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -53,21 +54,25 @@ export default function Dashboard() {
   const { data: ringkasan, isLoading: loadingRingkasan } = useQuery({
     queryKey: ["dashboard-ringkasan"],
     queryFn: () => api<{ data: RingkasanData }>("/api/dashboard/ringkasan"),
+    staleTime: 30_000,
   });
 
   const { data: simpananBulanan, isLoading: loadingChart } = useQuery({
     queryKey: ["dashboard-simpanan-per-bulan"],
     queryFn: () => api<{ data: SimpananBulanan[] }>("/api/dashboard/simpanan-per-bulan"),
+    staleTime: 30_000,
   });
 
   const { data: pinjamanStatus, isLoading: loadingStatus } = useQuery({
     queryKey: ["dashboard-pinjaman-status"],
     queryFn: () => api<{ data: PinjamanStatus }>("/api/dashboard/pinjaman-status"),
+    staleTime: 30_000,
   });
 
   const { data: aktivitas, isLoading: loadingAktivitas } = useQuery({
     queryKey: ["dashboard-aktivitas"],
     queryFn: () => api<{ data: AktivitasData }>("/api/dashboard/aktivitas"),
+    staleTime: 30_000,
   });
 
   const r = ringkasan?.data;
@@ -117,35 +122,37 @@ export default function Dashboard() {
   ];
 
   // Build recent activity from real data
-  const recentActivity: { act: string; user: string; amt: number; status: string; statusColor: string }[] = [];
-
-  if (aktivitas?.data) {
-    for (const a of aktivitas.data.simpananBaru.slice(0, 3)) {
-      recentActivity.push({
-        act: "Setoran Simpanan",
-        user: a.anggota?.nama || "-",
-        amt: Number(a.jumlah),
-        status: "Selesai",
-        statusColor: "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400",
-      });
+  const recentActivity = useMemo(() => {
+    const result: { act: string; user: string; amt: number; status: string; statusColor: string }[] = [];
+    if (aktivitas?.data) {
+      for (const a of aktivitas.data.simpananBaru.slice(0, 3)) {
+        result.push({
+          act: "Setoran Simpanan",
+          user: a.anggota?.nama || "-",
+          amt: Number(a.jumlah),
+          status: "Selesai",
+          statusColor: "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400",
+        });
+      }
+      for (const p of aktivitas.data.pinjamanBaru.slice(0, 3)) {
+        const statusMap: Record<string, { label: string; color: string }> = {
+          diajukan: { label: "Diproses", color: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
+          disetujui: { label: "Disetujui", color: "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" },
+          aktif: { label: "Aktif", color: "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" },
+          lunas: { label: "Lunas", color: "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400" },
+        };
+        const s = statusMap[p.status] || { label: p.status, color: "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" };
+        result.push({
+          act: "Pengajuan Pinjaman",
+          user: p.anggota?.nama || "-",
+          amt: Number(p.jumlah),
+          status: s.label,
+          statusColor: s.color,
+        });
+      }
     }
-    for (const p of aktivitas.data.pinjamanBaru.slice(0, 3)) {
-      const statusMap: Record<string, { label: string; color: string }> = {
-        diajukan: { label: "Diproses", color: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
-        disetujui: { label: "Disetujui", color: "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" },
-        aktif: { label: "Aktif", color: "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" },
-        lunas: { label: "Lunas", color: "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400" },
-      };
-      const s = statusMap[p.status] || { label: p.status, color: "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" };
-      recentActivity.push({
-        act: "Pengajuan Pinjaman",
-        user: p.anggota?.nama || "-",
-        amt: Number(p.jumlah),
-        status: s.label,
-        statusColor: s.color,
-      });
-    }
-  }
+    return result;
+  }, [aktivitas?.data]);
 
   const isLoading = loadingRingkasan || loadingChart || loadingStatus || loadingAktivitas;
 
@@ -154,7 +161,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Ringkasan koperasi per hari ini</p>
         </div>
       </div>
@@ -329,32 +336,55 @@ export default function Dashboard() {
                   Belum ada aktivitas
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Aktivitas</th>
-                        <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Anggota</th>
-                        <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Nominal</th>
-                        <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentActivity.map((row, i) => (
-                        <tr key={i} className="border-b border-border/50 hover:bg-muted/40 transition-colors group">
-                          <td className="py-3 px-3 font-medium text-foreground group-hover:text-primary transition-colors">{row.act}</td>
-                          <td className="py-3 px-3 text-muted-foreground">{row.user}</td>
-                          <td className="py-3 px-3 text-right font-semibold text-foreground">{formatRupiah(row.amt)}</td>
-                          <td className="py-3 px-3">
-                            <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md ${row.statusColor}`}>
-                              {row.status}
-                            </span>
-                          </td>
+                <>
+                  {/* Desktop Table */}
+                  <div className="hidden lg:block overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Aktivitas</th>
+                          <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Anggota</th>
+                          <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Nominal</th>
+                          <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {recentActivity.map((row, i) => (
+                          <tr key={`${row.act}-${row.user}-${i}`} className="border-b border-border/50 hover:bg-muted/40 transition-colors group">
+                            <td className="py-3 px-3 font-medium text-foreground group-hover:text-primary transition-colors">{row.act}</td>
+                            <td className="py-3 px-3 text-muted-foreground">{row.user}</td>
+                            <td className="py-3 px-3 text-right font-semibold text-foreground">{formatRupiah(row.amt)}</td>
+                            <td className="py-3 px-3">
+                              <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md ${row.statusColor}`}>
+                                {row.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Cards */}
+                  <div className="lg:hidden space-y-3">
+                    {recentActivity.map((row, i) => (
+                      <div key={`${row.act}-${row.user}-${i}`} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-medium text-foreground">{row.act}</p>
+                            <p className="text-sm text-muted-foreground mt-0.5">{row.user}</p>
+                          </div>
+                          <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md ${row.statusColor}`}>
+                            {row.status}
+                          </span>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-border/50">
+                          <p className="text-lg font-bold text-foreground">{formatRupiah(row.amt)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

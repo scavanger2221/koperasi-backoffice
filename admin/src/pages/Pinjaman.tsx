@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Select,
   SelectContent,
@@ -82,6 +83,8 @@ export default function PinjamanPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<PinjamanItem | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ type: "approve" | "cair" | "bayar"; id?: string; payload?: any } | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -99,12 +102,14 @@ export default function PinjamanPage() {
     queryKey: ["pinjaman", tab],
     queryFn: () =>
       api<{ data: PinjamanItem[] }>(`/api/pinjaman?${tab !== "all" ? `status=${tab}` : ""}`),
+    staleTime: 30_000,
   });
 
   const { data: anggotaData } = useQuery({
     queryKey: ["anggota-dropdown"],
     queryFn: () => api<{ data: AnggotaItem[] }>("/api/anggota?limit=100"),
     enabled: createOpen,
+    staleTime: 30_000,
   });
 
   const activeAnggota = anggotaData?.data?.filter((a) => a.status === "aktif") ?? [];
@@ -153,6 +158,7 @@ export default function PinjamanPage() {
     queryKey: ["pinjaman-detail", selected?.id],
     queryFn: () => api<{ data: PinjamanDetail }>(`/api/pinjaman/${selected!.id}`),
     enabled: !!selected && detailOpen,
+    staleTime: 30_000,
   });
 
   const bayarMutation = useMutation({
@@ -171,9 +177,10 @@ export default function PinjamanPage() {
     setDetailOpen(true);
   };
 
-  const handleBayar = (pinjamanId: string) => {
-    const today = new Date().toISOString().split("T")[0];
-    bayarMutation.mutate({ pinjamanId, tanggalBayar: today, metodeBayar: "tunai" });
+  const handleBayar = () => {
+    if (!selected) return;
+    setConfirmTarget({ type: "bayar", payload: { pinjamanId: selected.id, tanggalBayar: new Date().toISOString().split("T")[0], metodeBayar: "tunai" } });
+    setConfirmOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -198,13 +205,24 @@ export default function PinjamanPage() {
     });
   };
 
+   const confirmAction = () => {
+    if (!confirmTarget) return;
+    if (confirmTarget.type === "approve") {
+      approveMutation.mutate(confirmTarget.id!);
+    } else if (confirmTarget.type === "cair") {
+      cairMutation.mutate(confirmTarget.id!);
+    } else if (confirmTarget.type === "bayar" && confirmTarget.payload) {
+      bayarMutation.mutate(confirmTarget.payload);
+    }
+  };
+
   const totalPinjaman = data?.data?.reduce((acc, p) => acc + Number(p.jumlah), 0) ?? 0;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Pinjaman</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Pinjaman</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Kelola pengajuan dan pinjaman anggota</p>
         </div>
         <div className="flex items-center gap-2 self-start">
@@ -456,24 +474,30 @@ export default function PinjamanPage() {
                                 <Eye className="w-3.5 h-3.5" />
                               </Button>
                               {p.status === "diajukan" && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                                  onClick={() => approveMutation.mutate(p.id)}
-                                >
-                                  <CheckCircle className="w-3.5 h-3.5" />
-                                </Button>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="w-8 h-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+      onClick={() => {
+        setConfirmTarget({ type: "approve", id: p.id });
+        setConfirmOpen(true);
+      }}
+    >
+      <CheckCircle className="w-3.5 h-3.5" />
+    </Button>
                               )}
                               {p.status === "disetujui" && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="w-8 h-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30"
-                                  onClick={() => cairMutation.mutate(p.id)}
-                                >
-                                  <Banknote className="w-3.5 h-3.5" />
-                                </Button>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="w-8 h-8 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+      onClick={() => {
+        setConfirmTarget({ type: "cair", id: p.id });
+        setConfirmOpen(true);
+      }}
+    >
+      <Banknote className="w-3.5 h-3.5" />
+    </Button>
                               )}
                             </div>
                           </td>
@@ -496,7 +520,7 @@ export default function PinjamanPage() {
                 {data?.data?.map((p) => {
                   const s = statusConfig[p.status] || statusConfig.diajukan;
                   return (
-                    <div key={p.id} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+                    <div key={p.id} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="font-semibold text-foreground">{p.noPinjaman}</p>
@@ -524,8 +548,8 @@ export default function PinjamanPage() {
                           <p className="text-foreground">{formatRupiah(p.angsuranPerBulan)}/bln</p>
                         </div>
                       </div>
-                      <div className="mt-3 flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => openDetail(p)}>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" className="flex-auto h-10 text-xs" onClick={() => openDetail(p)}>
                           <Eye className="w-3 h-3 mr-1" />
                           Detail
                         </Button>
@@ -533,7 +557,7 @@ export default function PinjamanPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1 h-8 text-xs text-primary border-primary/30 hover:bg-primary/10"
+                            className="flex-auto h-10 text-xs text-primary border-primary/30 hover:bg-primary/10"
                             onClick={() => approveMutation.mutate(p.id)}
                           >
                             <CheckCircle className="w-3 h-3 mr-1" />
@@ -544,7 +568,7 @@ export default function PinjamanPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1 h-8 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:hover:bg-blue-950/30"
+                            className="flex-auto h-10 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:hover:bg-blue-950/30"
                             onClick={() => cairMutation.mutate(p.id)}
                           >
                             <Banknote className="w-3 h-3 mr-1" />
@@ -669,7 +693,7 @@ export default function PinjamanPage() {
                             <Button
                               size="sm"
                               className="h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
-                              onClick={() => handleBayar(detailQuery.data.id)}
+                              onClick={() => handleBayar()}
                               disabled={bayarMutation.isPending}
                             >
                               {bayarMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Bayar"}
@@ -695,6 +719,30 @@ export default function PinjamanPage() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      {/* Confirm action dialog */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={
+          confirmTarget?.type === "approve"
+            ? "Setujui Pinjaman?"
+            : confirmTarget?.type === "cair"
+            ? "Cairkan Pinjaman?"
+            : "Bayar Angsuran?"
+        }
+        description={
+          confirmTarget?.type === "approve"
+            ? "Pinjaman akan disetujui dan siap untuk dicairkan."
+            : confirmTarget?.type === "cair"
+            ? "Pinjaman akan dicairkan. Angsuran akan mulai jatuh tempo bulan berikutnya."
+            : "Pembayaran angsuran akan dicatat."
+        }
+        confirmLabel="Ya, Lanjutkan"
+        variant={confirmTarget?.type === "bayar" ? "success" : "info"}
+        onConfirm={confirmAction}
+        disabled={approveMutation.isPending || cairMutation.isPending || bayarMutation.isPending}
+      />
     </div>
   );
 }

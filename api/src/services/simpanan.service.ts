@@ -70,23 +70,21 @@ export class SimpananService {
   }
 
   async getSaldo(anggotaId: string) {
-    const rows = await db.select().from(simpanan).where(eq(simpanan.anggotaId, anggotaId));
-    const saldo = {
-      pokok: 0,
-      wajib: 0,
-      sukarela: 0,
-      deposito: 0,
-      total: 0,
-    };
+    const rows = db.all<{ jenis: string; total: number }>(sql`
+      SELECT jenis, SUM(CAST(jumlah AS INTEGER)) as total
+      FROM simpanan
+      WHERE anggota_id = ${anggotaId}
+      GROUP BY jenis
+    `);
 
+    const saldo = { pokok: 0, wajib: 0, sukarela: 0, deposito: 0, total: 0 };
     for (const r of rows) {
-      const jml = Number(r.jumlah);
-      if (r.jenis === "pokok") saldo.pokok += jml;
-      if (r.jenis === "wajib") saldo.wajib += jml;
-      if (r.jenis === "sukarela") saldo.sukarela += jml;
-      if (r.jenis === "deposito") saldo.deposito += jml;
-      saldo.total += jml;
+      if (r.jenis === "pokok") saldo.pokok = r.total;
+      if (r.jenis === "wajib") saldo.wajib = r.total;
+      if (r.jenis === "sukarela") saldo.sukarela = r.total;
+      if (r.jenis === "deposito") saldo.deposito = r.total;
     }
+    saldo.total = saldo.pokok + saldo.wajib + saldo.sukarela + saldo.deposito;
 
     return saldo;
   }

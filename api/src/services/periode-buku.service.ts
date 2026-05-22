@@ -5,13 +5,17 @@ import { db } from "../lib/db.js";
 import { periodeBuku } from "../../database/schema/index.js";
 
 class PeriodeBukuService {
-  async list() {
+  async list({ page = 1, limit = 50 }: { page?: number; limit?: number } = {}) {
+    const offset = (page - 1) * limit;
     const data = await db
       .select()
       .from(periodeBuku)
-      .orderBy(desc(periodeBuku.tahun));
+      .orderBy(desc(periodeBuku.tahun))
+      .limit(limit)
+      .offset(offset);
 
-    return { data };
+    const total = await db.$count(periodeBuku);
+    return { data, meta: { page, limit, total } };
   }
 
   async getById(id: string) {

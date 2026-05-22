@@ -90,7 +90,7 @@ export const akun = sqliteTable("akun", {
 export const jurnal = sqliteTable("jurnal", {
   id: text("id").primaryKey(),
   tanggal: text("tanggal").notNull(),
-  noJurnal: text("no_jurnal").notNull(),
+  noJurnal: text("no_jurnal").notNull().unique(),
   keterangan: text("keterangan").notNull(),
   refTipe: text("ref_tipe", { enum: ["simpanan", "pinjaman", "angsuran", "penjualan", "pembelian", "biaya", "jurnal_umum"] }).notNull(),
   refId: text("ref_id"),
@@ -132,7 +132,7 @@ export const jurnalDetail = sqliteTable("jurnal_detail", {
 
 export const shu = sqliteTable("shu", {
   id: text("id").primaryKey(),
-  periode: text("periode").notNull(), // YYYY
+  periode: text("periode").notNull().unique(), // YYYY
   totalShu: text("total_shu").notNull().default("0"),
   totalPendapatan: text("total_pendapatan").notNull().default("0"),
   totalBiaya: text("total_biaya").notNull().default("0"),
@@ -233,7 +233,7 @@ export const koperasi = sqliteTable("koperasi", {
 
 export const periodeBuku = sqliteTable("periode_buku", {
   id: text("id").primaryKey(),
-  tahun: integer("tahun").notNull(),
+  tahun: integer("tahun").notNull().unique(),
   tanggalMulai: text("tanggal_mulai").notNull(),
   tanggalSelesai: text("tanggal_selesai").notNull(),
   status: text("status", { enum: ["buka", "tutup"] }).notNull().default("buka"),
@@ -241,3 +241,5 @@ export const periodeBuku = sqliteTable("periode_buku", {
   createdAt: text("created_at").default(sql`(datetime('now'))`).notNull(),
   updatedAt: text("updated_at").default(sql`(datetime('now'))`).$onUpdate(() => sql`(datetime('now'))`).notNull(),
 });
+
+

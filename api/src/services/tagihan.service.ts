@@ -73,7 +73,7 @@ export class TagihanService {
     }
 
     if (toInsert.length > 0) {
-      await db.insert(tagihanSimpanan).values(toInsert);
+      await db.insert(tagihanSimpanan).values(toInsert as typeof tagihanSimpanan.$inferInsert[]);
     }
 
     return { created, skipped, periode };

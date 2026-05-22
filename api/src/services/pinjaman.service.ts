@@ -1,7 +1,7 @@
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import crypto from "crypto";
-import { db } from "../lib/db.js";
+import { db, rawSqlite } from "../lib/db.js";
 import { pinjaman, angsuran, anggota } from "../../database/schema/index.js";
 import { jurnalPinjamanCair, jurnalAngsuran } from "./jurnal.service.js";
 import type { PinjamanInput, AngsuranInput } from "@koperasi/shared/schemas";
@@ -154,81 +154,53 @@ export class PinjamanService {
   }
 
   async getKolektibilitas(pinjamanId: string): Promise<number> {
-    const angsuranList = await db
-      .select()
-      .from(angsuran)
-      .where(eq(angsuran.pinjamanId, pinjamanId));
+    const result = db.get<{ maxTelat: number }>(sql`
+      SELECT MAX(
+        CASE
+          WHEN status = 'belum_lunas' THEN CAST(julianday('now') - julianday(tanggal_jatuh_tempo) AS INTEGER)
+          WHEN status IN ('lunas', 'telat') AND tanggal_bayar IS NOT NULL
+            THEN CAST(julianday(tanggal_bayar) - julianday(tanggal_jatuh_tempo) AS INTEGER)
+          ELSE 0
+        END
+      ) as maxTelat
+      FROM angsuran
+      WHERE pinjaman_id = ${pinjamanId}
+    `);
 
-    let maxTelat = 0;
-    for (const a of angsuranList) {
-      if (a.status === "lunas" || a.status === "telat") {
-        if (a.tanggalBayar) {
-          const due = new Date(a.tanggalJatuhTempo);
-          const bayar = new Date(a.tanggalBayar);
-          const diff = Math.floor((bayar.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
-          if (diff > maxTelat) maxTelat = diff;
-        }
-      } else if (a.status === "belum_lunas") {
-        const today = new Date();
-        const due = new Date(a.tanggalJatuhTempo);
-        const diff = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
-        if (diff > maxTelat) maxTelat = diff;
-      }
-    }
-
-    if (maxTelat === 0) return 1; // Lancar
-    if (maxTelat <= 90) return 2; // Kurang Lancar
-    if (maxTelat <= 180) return 3; // Diragukan
-    return 4; // Macet
+    const maxTelat = result?.maxTelat ?? 0;
+    if (maxTelat <= 0) return 1;
+    if (maxTelat <= 90) return 2;
+    if (maxTelat <= 180) return 3;
+    return 4;
   }
 
   async getKolektibilitasMap(activePinjaman: typeof pinjaman.$inferSelect[]) {
     if (activePinjaman.length === 0) return {};
     const pinjamanIds = activePinjaman.map((p) => p.id);
-    const allAngsuran = await db
-      .select()
-      .from(angsuran)
-      .where(inArray(angsuran.pinjamanId, pinjamanIds));
 
-    const angsuranMap: Record<string, typeof angsuran.$inferSelect[]> = {};
-    for (const a of allAngsuran) {
-      if (!angsuranMap[a.pinjamanId]) angsuranMap[a.pinjamanId] = [];
-      angsuranMap[a.pinjamanId].push(a);
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const results = db.all<{ pinjamanId: string; maxTelat: number }>(sql`
+      SELECT pinjaman_id as pinjamanId,
+        MAX(
+          CASE
+            WHEN status = 'belum_lunas' THEN CAST(julianday('now') - julianday(tanggal_jatuh_tempo) AS INTEGER)
+            WHEN status IN ('lunas', 'telat') AND tanggal_bayar IS NOT NULL
+              THEN CAST(julianday(tanggal_bayar) - julianday(tanggal_jatuh_tempo) AS INTEGER)
+            ELSE 0
+          END
+        ) as maxTelat
+      FROM angsuran
+      WHERE pinjaman_id IN (${sql.join(pinjamanIds.map(id => sql`${id}`))})
+      GROUP BY pinjaman_id
+    `);
 
     const kolMap: Record<string, number> = {};
-
-    for (const p of activePinjaman) {
-      const angsuranList = angsuranMap[p.id] || [];
-      let maxTelat = 0;
-
-      for (const a of angsuranList) {
-        if (a.status === "lunas" || a.status === "telat") {
-          if (a.tanggalBayar) {
-            const due = new Date(a.tanggalJatuhTempo);
-            due.setHours(0, 0, 0, 0);
-            const bayar = new Date(a.tanggalBayar);
-            bayar.setHours(0, 0, 0, 0);
-            const diff = Math.floor((bayar.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
-            if (diff > maxTelat) maxTelat = diff;
-          }
-        } else if (a.status === "belum_lunas") {
-          const due = new Date(a.tanggalJatuhTempo);
-          due.setHours(0, 0, 0, 0);
-          const diff = Math.floor((today.getTime() - due.getTime()) / (1000 * 60 * 60 * 24));
-          if (diff > maxTelat) maxTelat = diff;
-        }
-      }
-
+    for (const r of results) {
+      const mt = r.maxTelat;
       let kol = 1;
-      if (maxTelat > 180) kol = 4;
-      else if (maxTelat > 90) kol = 3;
-      else if (maxTelat > 0) kol = 2;
-
-      kolMap[p.id] = kol;
+      if (mt > 180) kol = 4;
+      else if (mt > 90) kol = 3;
+      else if (mt > 0) kol = 2;
+      kolMap[r.pinjamanId] = kol;
     }
 
     return kolMap;
@@ -236,35 +208,38 @@ export class PinjamanService {
 
   async cekDanUpdateDenda() {
     const today = new Date().toISOString().split("T")[0];
-    const unpaid = await db
-      .select()
-      .from(angsuran)
-      .where(and(eq(angsuran.status, "belum_lunas"), sql`${angsuran.tanggalJatuhTempo} < ${today}`));
 
-    for (const a of unpaid) {
-      const denda = await this.getDenda(a.tanggalJatuhTempo);
-      if (denda > 0) {
-        const totalBayar = Number(a.jumlahPokok) + Number(a.jumlahBunga) + denda;
-        await db
-          .update(angsuran)
-          .set({ denda: String(denda), totalBayar: String(totalBayar), status: "telat" })
-          .where(eq(angsuran.id, a.id));
-      }
-    }
+    // Batch update all overdue angsuran to telat with denda
+    const result = rawSqlite.prepare(`
+      UPDATE angsuran SET
+        status = 'telat',
+        denda = CAST(
+          CAST(julianday(?) - julianday(tanggal_jatuh_tempo) AS INTEGER) * 0.5 / 30 AS INTEGER
+        ),
+        total_bayar = CAST(
+          CAST(jumlah_pokok AS INTEGER) + CAST(jumlah_bunga AS INTEGER) +
+          CAST(
+            CAST(julianday(?) - julianday(tanggal_jatuh_tempo) AS INTEGER) * 0.5 / 30 AS INTEGER
+          ) AS TEXT
+        )
+      WHERE status = 'belum_lunas' AND tanggal_jatuh_tempo < ?
+    `).run(today, today, today);
 
-    // Update kolektibilitas → macet jika >90 hari
+    const changed = result.changes;
+
+    // Mark pinjaman as macet if kolektibilitas >= 4
     const activePinjaman = await db.select().from(pinjaman).where(eq(pinjaman.status, "aktif"));
     if (activePinjaman.length > 0) {
       const kolMap = await this.getKolektibilitasMap(activePinjaman);
-      for (const p of activePinjaman) {
-        const kol = kolMap[p.id] ?? 1;
-        if (kol >= 4) {
-          await db.update(pinjaman).set({ status: "macet" }).where(eq(pinjaman.id, p.id));
+      const macetIds = Object.entries(kolMap).filter(([, kol]) => kol >= 4).map(([id]) => id);
+      if (macetIds.length > 0) {
+        for (const id of macetIds) {
+          await db.update(pinjaman).set({ status: "macet" }).where(eq(pinjaman.id, id));
         }
       }
     }
 
-    return { updated: unpaid.length };
+    return { updated: changed ?? 0 };
   }
 
   async bayarAngsuran(data: AngsuranInput) {

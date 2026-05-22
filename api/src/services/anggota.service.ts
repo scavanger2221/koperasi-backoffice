@@ -59,19 +59,22 @@ export class AnggotaService {
   }
 
   async update(id: string, data: AnggotaUpdateInput) {
-    await this.getById(id);
+    const existing = await db.select({ id: anggota.id }).from(anggota).where(eq(anggota.id, id)).get();
+    if (!existing) throw new HTTPException(404, { message: "Anggota tidak ditemukan" });
     await db.update(anggota).set(data).where(eq(anggota.id, id));
     return this.getById(id);
   }
 
   async deactivate(id: string) {
-    await this.getById(id);
+    const existing = await db.select({ id: anggota.id }).from(anggota).where(eq(anggota.id, id)).get();
+    if (!existing) throw new HTTPException(404, { message: "Anggota tidak ditemukan" });
     await db.update(anggota).set({ status: "nonaktif", tanggalKeluar: new Date().toISOString().split("T")[0] }).where(eq(anggota.id, id));
     return { id, status: "nonaktif" };
   }
 
   async activate(id: string) {
-    await this.getById(id);
+    const existing = await db.select({ id: anggota.id }).from(anggota).where(eq(anggota.id, id)).get();
+    if (!existing) throw new HTTPException(404, { message: "Anggota tidak ditemukan" });
     await db.update(anggota).set({ status: "aktif", tanggalKeluar: null }).where(eq(anggota.id, id));
     return { id, status: "aktif" };
   }

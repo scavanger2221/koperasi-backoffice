@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Loader2, Wallet, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,11 +60,13 @@ export default function SimpananPage() {
       return res;
     },
     placeholderData: (prev) => prev,
+    staleTime: 30_000,
   });
 
   const { data: anggotaList } = useQuery({
     queryKey: ["anggota-list"],
     queryFn: () => api<{ data: any[] }>("/api/anggota?limit=100"),
+    staleTime: 30_000,
   });
 
   const createMutation = useMutation({
@@ -108,13 +110,21 @@ export default function SimpananPage() {
     });
   };
 
-  const totalSimpanan = data?.data?.reduce((acc, s) => acc + Number(s.jumlah), 0) ?? 0;
+  const totalSimpanan = useMemo(() => data?.data?.reduce((acc, s) => acc + Number(s.jumlah), 0) ?? 0, [data?.data]);
+
+  const simpananByJenis = useMemo(() => {
+    const items = data?.data ?? [];
+    return ["pokok", "wajib", "sukarela", "deposito"].map((jenis) => ({
+      jenis,
+      total: items.filter(s => s.jenis === jenis).reduce((acc, s) => acc + Number(s.jumlah), 0) ?? 0,
+    }));
+  }, [data?.data]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Simpanan</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Simpanan</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Kelola simpanan anggota koperasi</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
@@ -227,17 +237,14 @@ export default function SimpananPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {["pokok", "wajib", "sukarela", "deposito"].map((jenis) => {
-          const total = data?.data?.filter(s => s.jenis === jenis).reduce((acc, s) => acc + Number(s.jumlah), 0) ?? 0;
-          return (
-            <Card key={jenis} className="border border-border shadow-sm">
-              <CardContent className="p-4">
-                <p className="text-xs text-muted-foreground capitalize mb-1">Simpanan {jenis}</p>
-                <p className="text-lg font-bold text-foreground">{formatRupiah(total)}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {simpananByJenis.map(({ jenis, total }) => (
+          <Card key={jenis} className="border border-border shadow-sm">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground capitalize mb-1">Simpanan {jenis}</p>
+              <p className="text-lg font-bold text-foreground">{formatRupiah(total)}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <Card className="border border-border shadow-sm" noHover>
@@ -305,7 +312,7 @@ export default function SimpananPage() {
               {/* Mobile Cards */}
               <div className="lg:hidden space-y-3">
                 {data?.data?.map((s) => (
-                  <div key={s.id} className="p-4 rounded-xl bg-card border border-border shadow-sm">
+                  <div key={s.id} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
                     <div className="flex items-start justify-between">
                       <div>
                         <p className="font-medium text-foreground">{s.anggota?.nama || "-"}</p>

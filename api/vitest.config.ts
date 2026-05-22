@@ -7,5 +7,6 @@ export default defineConfig({
     pool: "forks",            // each file gets its own process
     fileParallelism: false,   // but still sequential to avoid resource contention
     setupFiles: ["./src/test-setup.ts"],
+    exclude: ["dist/**"],
   },
 });

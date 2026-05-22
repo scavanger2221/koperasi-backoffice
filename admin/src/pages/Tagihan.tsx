@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
-import { Receipt, Plus, AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react";
+import { Plus, AlertTriangle, CheckCircle, Clock, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { rules, validate, type FieldErrors } from "@/lib/validation";
 import { formatRupiah } from "@/lib/utils";
@@ -43,42 +45,62 @@ function statusBadge(status: string) {
 }
 
 export default function TagihanPage() {
-  const [tagihan, setTagihan] = useState<Tagihan[]>([]);
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [generateLoading, setGenerateLoading] = useState(false);
-  const { toast } = useToast();
   const [periodeFilter, setPeriodeFilter] = useState(new Date().toISOString().slice(0, 7));
   const [generatePeriode, setGeneratePeriode] = useState(new Date().toISOString().slice(0, 7));
   const [generateJumlah, setGenerateJumlah] = useState("50000");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ type: "bayar" | "generate"; id?: string } | null>(null);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    fetchTagihan();
-    fetchSummary();
-  }, [periodeFilter]);
+  const { data: summaryQuery } = useQuery({
+    queryKey: ["tagihan-summary", periodeFilter],
+    queryFn: () => api<{ data: Summary }>(`/api/tagihan/summary?periode=${periodeFilter}`),
+    staleTime: 30_000,
+  });
 
-  const fetchTagihan = async () => {
-    setLoading(true);
-    try {
-      const res = await api<{ success: boolean; data: Tagihan[]; meta: any }>(`/api/tagihan?periode=${periodeFilter}&limit=100`);
-      setTagihan(res.data);
-    } finally {
-      setLoading(false);
+  const summary = summaryQuery?.data;
+
+  const { data: tagihanData, isLoading, refetch } = useQuery({
+    queryKey: ["tagihan", periodeFilter],
+    queryFn: () => api<{ data: Tagihan[] }>(`/api/tagihan?periode=${periodeFilter}&limit=100`),
+    staleTime: 30_000,
+  });
+
+  const tagihan: Tagihan[] = tagihanData?.data ?? [];
+
+  const confirmAction = async () => {
+    if (!confirmTarget) return;
+    if (confirmTarget.type === "bayar" && confirmTarget.id) {
+      try {
+        const tanggalBayar = new Date().toISOString().split("T")[0];
+        await api("/api/tagihan/bayar", {
+          method: "POST",
+          body: JSON.stringify({ tagihanId: confirmTarget.id, tanggalBayar }),
+        });
+        refetch();
+        toast("Tagihan berhasil dibayar", "success");
+      } catch {
+        toast("Gagal membayar tagihan", "error");
+      }
+    } else if (confirmTarget.type === "generate") {
+      try {
+        await api("/api/tagihan/generate", {
+          method: "POST",
+          body: JSON.stringify({ periode: generatePeriode, jumlah: generateJumlah }),
+        });
+        setDialogOpen(false);
+        setErrors({});
+        refetch();
+        toast("Tagihan berhasil digenerate", "success");
+      } catch {
+        toast("Gagal generate tagihan", "error");
+      }
     }
   };
 
-  const fetchSummary = async () => {
-    try {
-      const res = await api<{ success: boolean; data: Summary }>(`/api/tagihan/summary?periode=${periodeFilter}`);
-      setSummary(res.data);
-    } catch {
-      setSummary(null);
-    }
-  };
-
-  const handleGenerate = async () => {
+  const handleGenerate = () => {
     const errs = validate(
       { periode: generatePeriode, jumlah: generateJumlah },
       {
@@ -88,45 +110,19 @@ export default function TagihanPage() {
     );
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
-
-    setGenerateLoading(true);
-    try {
-      await api("/api/tagihan/generate", {
-        method: "POST",
-        body: JSON.stringify({ periode: generatePeriode, jumlah: generateJumlah }),
-      });
-      setDialogOpen(false);
-      setErrors({});
-      fetchTagihan();
-      fetchSummary();
-      toast("Tagihan berhasil digenerate", "success");
-    } catch {
-      toast("Gagal generate tagihan", "error");
-    } finally {
-      setGenerateLoading(false);
-    }
+    setConfirmTarget({ type: "generate" });
+    setConfirmOpen(true);
   };
 
-  const handleBayar = async (id: string) => {
-    const tanggalBayar = new Date().toISOString().split("T")[0];
-    try {
-      await api("/api/tagihan/bayar", {
-        method: "POST",
-        body: JSON.stringify({ tagihanId: id, tanggalBayar }),
-      });
-      fetchTagihan();
-      fetchSummary();
-      toast("Tagihan berhasil dibayar", "success");
-    } catch {
-      toast("Gagal membayar tagihan", "error");
-    }
+  const handleBayar = (id: string) => {
+    setConfirmTarget({ type: "bayar", id });
+    setConfirmOpen(true);
   };
 
   const handleCekTunggakan = async () => {
     try {
       await api("/api/tagihan/cek-tunggakan", { method: "POST" });
-      fetchTagihan();
-      fetchSummary();
+      refetch();
       toast("Tunggakan berhasil diperbarui", "success");
     } catch {
       toast("Gagal cek tunggakan", "error");
@@ -137,7 +133,7 @@ export default function TagihanPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Tagihan Simpanan Wajib</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Tagihan Simpanan Wajib</h1>
           <p className="text-muted-foreground text-sm mt-1">Kelola tagihan simpanan wajib bulanan anggota</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={(v) => {
@@ -174,8 +170,7 @@ export default function TagihanPage() {
                   step="5000"
                 />
               </FormField>
-              <Button onClick={handleGenerate} disabled={generateLoading} className="w-full">
-                {generateLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Button onClick={handleGenerate} className="w-full">
                 Generate
               </Button>
             </div>
@@ -188,7 +183,7 @@ export default function TagihanPage() {
           <Card className="border border-border shadow-sm">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Receipt className="w-5 h-5 text-muted-foreground" />
+                <AlertTriangle className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{summary.belum_bayar + summary.lunas + summary.tunggakan}</p>
@@ -233,57 +228,119 @@ export default function TagihanPage() {
       )}
 
       <Card className="border border-border shadow-sm" noHover>
-        <CardHeader>
-          <CardTitle className="text-base">Filter Periode</CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">Filter Periode</span>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-4">
-          <Input type="month" value={periodeFilter} onChange={(e) => setPeriodeFilter(e.target.value)} className="w-[180px]" />
+          <Input type="month" value={periodeFilter} onChange={(e) => setPeriodeFilter(e.target.value)} className="flex-1 min-w-[140px] max-w-[180px]" />
           <Button variant="outline" onClick={handleCekTunggakan}>
             <AlertTriangle className="w-3.5 h-3.5 mr-1" />
             Cek Tunggakan
           </Button>
         </CardContent>
         <CardContent>
-          {loading && <div className="py-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>}
-          {!loading && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">No Anggota</th>
-                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Nama</th>
-                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Periode</th>
-                    <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Jumlah</th>
-                    <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Status</th>
-                    <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tagihan.map((t) => (
-                    <tr key={t.id} className={`border-b border-border/50 hover:bg-muted/60 transition-colors row-status row-status-${t.status}`}>
-                      <td className="py-3 px-3 font-mono text-xs">{t.anggota?.noAnggota}</td>
-                      <td className="py-3 px-3">{t.anggota?.nama}</td>
-                      <td className="py-3 px-3">{t.periode}</td>
-                      <td className="py-3 px-3 text-right font-semibold text-foreground">{formatRupiah(Number(t.jumlah))}</td>
-                      <td className="py-3 px-3">{statusBadge(t.status)}</td>
-                      <td className="py-3 px-3 text-right">
-                        {t.status !== "lunas" && (
-                          <Button size="sm" variant="outline" onClick={() => handleBayar(t.id)}>
-                            <Receipt className="w-3 h-3 mr-1" />Bayar
-                          </Button>
-                        )}
-                      </td>
+          {isLoading && <div className="py-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>}
+          {!isLoading && (
+            <>
+              {/* Desktop Table */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">No Anggota</th>
+                      <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Nama</th>
+                      <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Periode</th>
+                      <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Jumlah</th>
+                      <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Status</th>
+                      <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Aksi</th>
                     </tr>
-                  ))}
-                  {tagihan.length === 0 && (
-                    <tr><td colSpan={6} className="py-12 text-center text-muted-foreground text-sm">Tidak ada data tagihan untuk periode ini</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {tagihan.map((t) => (
+                      <tr key={t.id} className={`border-b border-border/50 hover:bg-muted/60 transition-colors row-status row-status-${t.status}`}>
+                        <td className="py-3 px-3 font-mono text-xs">{t.anggota?.noAnggota}</td>
+                        <td className="py-3 px-3">{t.anggota?.nama}</td>
+                        <td className="py-3 px-3">{t.periode}</td>
+                        <td className="py-3 px-3 text-right font-semibold text-foreground">{formatRupiah(Number(t.jumlah))}</td>
+                        <td className="py-3 px-3">{statusBadge(t.status)}</td>
+                        <td className="py-3 px-3 text-right">
+                          {t.status !== "lunas" && (
+                            <Button size="sm" variant="outline" onClick={() => handleBayar(t.id)}>
+                              <AlertTriangle className="w-3 h-3 mr-1" />Bayar
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {tagihan.length === 0 && (
+                      <tr><td colSpan={6} className="py-12 text-center text-muted-foreground text-sm">Tidak ada data tagihan untuk periode ini</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="lg:hidden space-y-3">
+                {tagihan.map((t) => (
+                  <div key={t.id} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-semibold text-foreground">{t.anggota?.nama}</p>
+                        <p className="text-xs text-muted-foreground font-mono mt-0.5">{t.anggota?.noAnggota}</p>
+                      </div>
+                      {statusBadge(t.status)}
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Periode</p>
+                        <p className="text-foreground font-medium">{t.periode}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Jumlah</p>
+                        <p className="text-foreground font-semibold">{formatRupiah(Number(t.jumlah))}</p>
+                      </div>
+                    </div>
+                    {t.status !== "lunas" && (
+                      <div className="mt-3">
+                        <Button size="sm" className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleBayar(t.id)}>
+                          <AlertTriangle className="w-4 h-4 mr-1.5" />Bayar
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {tagihan.length === 0 && (
+                  <div className="py-12 text-center text-muted-foreground text-sm">Tidak ada data tagihan untuk periode ini</div>
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
+
+      {/* Confirm dialogs */}
+      <ConfirmDialog
+        open={confirmOpen && confirmTarget?.type === "bayar"}
+        onOpenChange={(v) => { setConfirmOpen(v); if (!v) setConfirmTarget(null); }}
+        title="Bayar Tagihan?"
+        description="Tagihan akan ditandai lunas dan dicatat dalam jurnal."
+        confirmLabel="Ya, Bayar"
+        variant="success"
+        onConfirm={confirmAction}
+      />
+
+      <ConfirmDialog
+        open={confirmOpen && confirmTarget?.type === "generate"}
+        onOpenChange={(v) => { setConfirmOpen(v); if (!v) setConfirmTarget(null); }}
+        title="Generate Tagihan?"
+        description={`Tagihan akan dibuat untuk ${generatePeriode} dengan jumlah ${formatRupiah(Number(generateJumlah))} per anggota.`}
+        confirmLabel="Ya, Generate"
+        variant="warning"
+        onConfirm={confirmAction}
+      />
     </div>
   );
 }

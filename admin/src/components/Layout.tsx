@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -68,6 +68,66 @@ const mobileNavItems = [
   { label: "Pinjaman", icon: HandCoins, path: "/pinjaman" },
   { label: "Lainnya", icon: MoreHorizontal, path: "#more" },
 ];
+
+const SidebarNav = React.memo(function SidebarNav({
+  pathname,
+  setSidebarOpen,
+  expandedGroups,
+  setExpandedGroups
+}: {
+  pathname: string;
+  setSidebarOpen: (v: boolean) => void;
+  expandedGroups: Set<string>;
+  setExpandedGroups: (v: Set<string>) => void;
+}) {
+  return (
+    <div className="p-3 space-y-1">
+      {navGroups.map((group) => {
+        const isExpanded = expandedGroups.has(group.label ?? "");
+        const hasGroupLabel = group.label !== null;
+        return (
+          <div key={group.label ?? "dashboard"} className="space-y-0.5">
+            {hasGroupLabel && (
+              <button
+                onClick={() => {
+                  const next = new Set(expandedGroups);
+                  if (isExpanded) next.delete(group.label!);
+                  else next.add(group.label!);
+                  setExpandedGroups(next);
+                }}
+                className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+              >
+                {group.label}
+                <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", isExpanded && "rotate-90")} />
+              </button>
+            )}
+            <div className={cn("space-y-0.5 overflow-hidden transition-all", hasGroupLabel && !isExpanded && "h-0 opacity-0 pointer-events-none")}>
+              {group.items.map((item) => {
+                const active = pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={() => setSidebarOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 text-sm font-medium transition-all border-l-[3px] rounded-r-lg",
+                      active
+                        ? "border-l-primary bg-primary/10 text-primary"
+                        : "border-l-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <item.icon className={cn("w-[18px] h-[18px]", active ? "text-primary" : "text-muted-foreground")} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+});
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -185,51 +245,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             sidebarOpen ? "translate-x-0 block" : "-translate-x-full"
           )}
         >
-          <div className="p-3 space-y-1">
-            {navGroups.map((group) => {
-              const isExpanded = expandedGroups.has(group.label ?? "");
-              const hasGroupLabel = group.label !== null;
-              return (
-                <div key={group.label ?? "dashboard"} className="space-y-0.5">
-                  {hasGroupLabel && (
-                    <button
-                      onClick={() => {
-                        const next = new Set(expandedGroups);
-                        if (isExpanded) next.delete(group.label!);
-                        else next.add(group.label!);
-                        setExpandedGroups(next);
-                      }}
-                      className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
-                    >
-                      {group.label}
-                      <ChevronRight className={cn("w-3.5 h-3.5 transition-transform", isExpanded && "rotate-90")} />
-                    </button>
-                  )}
-                  <div className={cn("space-y-0.5 overflow-hidden transition-all", hasGroupLabel && !isExpanded && "h-0 opacity-0 pointer-events-none")}>
-                    {group.items.map((item) => {
-                      const active = location.pathname === item.path;
-                      return (
-                        <Link
-                          key={item.path}
-                          to={item.path}
-                          onClick={() => setSidebarOpen(false)}
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2 text-sm font-medium transition-all border-l-[3px] rounded-r-lg",
-                            active
-                              ? "border-l-primary bg-primary/10 text-primary"
-                              : "border-l-transparent text-muted-foreground hover:bg-muted hover:text-foreground"
-                          )}
-                        >
-                          <item.icon className={cn("w-[18px] h-[18px]", active ? "text-primary" : "text-muted-foreground")} />
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <SidebarNav pathname={location.pathname} setSidebarOpen={setSidebarOpen} expandedGroups={expandedGroups} setExpandedGroups={setExpandedGroups} />
 
 
         </aside>

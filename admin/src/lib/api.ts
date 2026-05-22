@@ -18,7 +18,7 @@ export async function downloadBlob(path: string, filename: string) {
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(a.href), 200);
 }
 
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
@@ -37,7 +37,7 @@ export async function api<T>(path: string, options?: RequestInit): Promise<T> {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     window.location.href = "/login";
-    throw new Error(json.error?.message || "Sesi habis. Silakan login kembali.");
+    return new Promise(() => {}); // never resolves, prevents double error
   }
   if (!res.ok || !json.success) {
     throw new Error(json.error?.message || `HTTP ${res.status}`);
