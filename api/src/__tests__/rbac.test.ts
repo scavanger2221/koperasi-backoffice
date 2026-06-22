@@ -95,7 +95,7 @@ describe("RBAC — Access Control", () => {
   // ── ANGGOTA endpoints ────────────────────────────────────────────────────
 
   describe("Anggota — create requires admin/pengurus/bendahara", () => {
-    const body = { nik: "9999999999999991", nama: "RBAC Member", tempatLahir: "Jakarta", tanggalLahir: "1990-01-01", alamat: "Jl. Test", pekerjaan: "Test", noTelepon: "081234567899" };
+    const body = { nik: "9999999999999991", nama: "RBAC Member", tempatLahir: "Jakarta", tanggalLahir: "1990-01-01", jenisKelamin: "laki_laki", alamat: "Jl. Test", pekerjaan: "Test", noTelepon: "081234567899" };
     it("admin → 201", async () => expect((await req("POST", "/api/anggota", adminToken, body)).status).toBe(201));
     it("pengurus → 201", async () => expect((await req("POST", "/api/anggota", pengurusToken, { ...body, nik: "9999999999999992" })).status).toBe(201));
     it("bendahara → 201", async () => expect((await req("POST", "/api/anggota", bendaharaToken, { ...body, nik: "9999999999999993" })).status).toBe(201));

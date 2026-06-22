@@ -102,6 +102,7 @@ export async function createTestAnggota(
       nama: overrides.nama ?? "Test Member",
       tempatLahir: overrides.tempatLahir ?? "Jakarta",
       tanggalLahir: overrides.tanggalLahir ?? "1990-01-01",
+      jenisKelamin: overrides.jenisKelamin ?? "laki_laki",
       alamat: overrides.alamat ?? "Jl. Test No. 1",
       pekerjaan: overrides.pekerjaan ?? "Tester",
       noTelepon: overrides.noTelepon ?? "081234567899",

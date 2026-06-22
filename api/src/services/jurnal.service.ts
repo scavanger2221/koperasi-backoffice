@@ -288,10 +288,9 @@ export async function getNeracaSaldo({
   const allAkun = await db.select().from(akun).where(eq(akun.aktif, true));
   const result = [];
 
-  let dateFilter = "";
-  if (tanggalMulai && tanggalSelesai) {
-    dateFilter = `AND j.tanggal >= '${tanggalMulai}' AND j.tanggal <= '${tanggalSelesai}'`;
-  }
+  const dateFilter = (tanggalMulai && tanggalSelesai)
+    ? sql`AND j.tanggal >= ${tanggalMulai} AND j.tanggal <= ${tanggalSelesai}`
+    : sql``;
 
   const sums = db.all<{ akunId: string; debit: string; kredit: string }>(sql`
     SELECT jd.akun_id as akunId,
@@ -299,7 +298,7 @@ export async function getNeracaSaldo({
            SUM(CAST(jd.kredit AS INTEGER)) as kredit
     FROM jurnal_detail jd
     INNER JOIN jurnal j ON jd.jurnal_id = j.id
-    WHERE 1=1 ${sql.raw(dateFilter)}
+    WHERE 1=1 ${dateFilter}
     GROUP BY jd.akun_id
   `);
 
@@ -346,10 +345,9 @@ export async function getLabaRugi({
   tanggalMulai?: string;
   tanggalSelesai?: string;
 }) {
-  let whereClause = "";
-  if (tanggalMulai && tanggalSelesai) {
-    whereClause = `AND j.tanggal >= '${tanggalMulai}' AND j.tanggal <= '${tanggalSelesai}'`;
-  }
+  const dateFilter = (tanggalMulai && tanggalSelesai)
+    ? sql`AND j.tanggal >= ${tanggalMulai} AND j.tanggal <= ${tanggalSelesai}`
+    : sql``;
 
   const sums = db.all<{ akunId: string; totalKreditMinusDebit: string; totalDebitMinusKredit: string }>(sql`
     SELECT jd.akun_id as akunId,
@@ -357,7 +355,7 @@ export async function getLabaRugi({
            SUM(CAST(jd.debit AS INTEGER)) - SUM(CAST(jd.kredit AS INTEGER)) as totalDebitMinusKredit
     FROM jurnal_detail jd
     INNER JOIN jurnal j ON jd.jurnal_id = j.id
-    WHERE 1=1 ${sql.raw(whereClause)}
+    WHERE 1=1 ${dateFilter}
     GROUP BY jd.akun_id
   `);
 
@@ -405,10 +403,9 @@ export async function getNeraca({
   tanggalMulai?: string;
   tanggalSelesai?: string;
 } = {}) {
-  let dateFilter = "";
-  if (tanggalMulai && tanggalSelesai) {
-    dateFilter = `AND j.tanggal >= '${tanggalMulai}' AND j.tanggal <= '${tanggalSelesai}'`;
-  }
+  const dateFilter = (tanggalMulai && tanggalSelesai)
+    ? sql`AND j.tanggal >= ${tanggalMulai} AND j.tanggal <= ${tanggalSelesai}`
+    : sql``;
 
   const sums = db.all<{ akunId: string; debit: string; kredit: string }>(sql`
     SELECT jd.akun_id as akunId,
@@ -416,7 +413,7 @@ export async function getNeraca({
            SUM(CAST(jd.kredit AS INTEGER)) as kredit
     FROM jurnal_detail jd
     INNER JOIN jurnal j ON jd.jurnal_id = j.id
-    WHERE 1=1 ${sql.raw(dateFilter)}
+    WHERE 1=1 ${dateFilter}
     GROUP BY jd.akun_id
   `);
 
@@ -544,11 +541,10 @@ export async function getArusKas({
 
   const kasIdList = kasAkun.map((a) => a.id);
 
-  // Build date filter
-  const dateParts: string[] = [];
-  if (tanggalMulai) dateParts.push(`j.tanggal >= '${tanggalMulai}'`);
-  if (tanggalSelesai) dateParts.push(`j.tanggal <= '${tanggalSelesai}'`);
-  const dateFilter = dateParts.length > 0 ? `AND ${dateParts.join(" AND ")}` : "";
+  const dateParts: ReturnType<typeof sql>[] = [];
+  if (tanggalMulai) dateParts.push(sql`j.tanggal >= ${tanggalMulai}`);
+  if (tanggalSelesai) dateParts.push(sql`j.tanggal <= ${tanggalSelesai}`);
+  const dateFilter = dateParts.length > 0 ? sql`AND ${sql.join(dateParts, sql` AND `)}` : sql``;
 
   // Get all jurnal where a kas account is involved, paired with counterpart
   // Using sql tagged template with sql.raw for dynamic IN clauses
@@ -565,7 +561,7 @@ export async function getArusKas({
     INNER JOIN jurnal_detail jd_counter ON jd_counter.jurnal_id = j.id
       AND jd_counter.akun_id NOT IN (${sql.raw(kasInRaw)})
     INNER JOIN akun a_counter ON jd_counter.akun_id = a_counter.id
-    WHERE 1=1 ${sql.raw(dateFilter)}
+    WHERE 1=1 ${dateFilter}
     ORDER BY j.tanggal ASC, j.created_at ASC
   `);
 

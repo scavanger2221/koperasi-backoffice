@@ -66,6 +66,7 @@ export class AuthService {
       nama: data.nama,
       tempatLahir: "-",
       tanggalLahir: "2000-01-01",
+      jenisKelamin: "laki_laki",
       alamat: data.alamat,
       pekerjaan: "-",
       noTelepon: data.noTelepon,

@@ -48,8 +48,12 @@ export class AnggotaService {
       nama: data.nama,
       tempatLahir: data.tempatLahir,
       tanggalLahir: data.tanggalLahir,
+      jenisKelamin: data.jenisKelamin,
+      agama: data.agama || null,
+      statusKawin: data.statusKawin || null,
+      pendidikanTerakhir: data.pendidikanTerakhir || null,
       alamat: data.alamat,
-      pekerjaan: data.pekerjaan,
+      pekerjaan: data.pekerjaan || null,
       noTelepon: data.noTelepon,
       email: data.email || null,
       status: "aktif",
@@ -61,7 +65,11 @@ export class AnggotaService {
   async update(id: string, data: AnggotaUpdateInput) {
     const existing = await db.select({ id: anggota.id }).from(anggota).where(eq(anggota.id, id)).get();
     if (!existing) throw new HTTPException(404, { message: "Anggota tidak ditemukan" });
-    await db.update(anggota).set(data).where(eq(anggota.id, id));
+    const cleaned: Record<string, any> = {};
+    for (const [key, val] of Object.entries(data)) {
+      if (val !== undefined && val !== "") cleaned[key] = val === "" ? null : val;
+    }
+    await db.update(anggota).set(cleaned).where(eq(anggota.id, id));
     return this.getById(id);
   }
 

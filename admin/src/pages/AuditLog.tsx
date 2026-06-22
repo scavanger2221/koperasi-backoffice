@@ -22,13 +22,13 @@ const actionColors: Record<string, string> = {
   LOGIN: "bg-purple-100 text-purple-700",
   APPROVE: "bg-amber-100 text-amber-700",
   PAYMENT: "bg-teal-100 text-teal-700",
+  ANGGOTA: "bg-emerald-100 text-emerald-700",
+  DEACTIVATE: "bg-red-100 text-red-700",
+  AKTIFKAN: "bg-emerald-100 text-emerald-700",
 };
 
 function getActionColor(action: string) {
-  for (const key of Object.keys(actionColors)) {
-    if (action.toUpperCase().includes(key)) return actionColors[key];
-  }
-  return "bg-gray-100 text-gray-700";
+  return actionColors[action] ?? "bg-gray-100 text-gray-700";
 }
 
 export default function AuditLogPage() {
@@ -37,22 +37,21 @@ export default function AuditLogPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const fetchLogs = async () => {
-    setLoading(true);
-    try {
-      const res = await api<{ success: boolean; data: AuditEntry[]; meta: { page: number; limit: number; total: number } }>(
-        `/api/audit?page=${page}&limit=50`
-      );
-      setLogs(res.data);
-      setTotal(res.meta.total);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchLogs = async () => {
+      setLoading(true);
+      try {
+        const res = await api<{ success: boolean; data: AuditEntry[]; meta: { page: number; limit: number; total: number } }>(
+          `/api/audit?page=${page}&limit=50`
+        );
+        setLogs(res.data);
+        setTotal(res.meta.total);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchLogs();
-  }, [page, fetchLogs]);
+  }, [page]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">

@@ -16,10 +16,15 @@ export interface Anggota {
   nama: string;
   tempatLahir: string;
   tanggalLahir: string;
+  jenisKelamin: "laki_laki" | "perempuan";
+  agama?: string;
+  statusKawin?: "belum_kawin" | "kawin" | "cerai_hidup" | "cerai_mati";
+  pendidikanTerakhir?: string;
   alamat: string;
-  pekerjaan: string;
+  pekerjaan?: string;
   noTelepon: string;
   email?: string;
+  foto?: string;
   status: "menunggu_verifikasi" | "aktif" | "nonaktif" | "ditolak";
   tanggalDaftar: string;
   createdAt: string;

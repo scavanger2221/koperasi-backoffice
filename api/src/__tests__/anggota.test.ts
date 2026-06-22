@@ -60,6 +60,7 @@ describe("Anggota CRUD", () => {
         nama: "Test Member",
         tempatLahir: "Jakarta",
         tanggalLahir: "1990-01-01",
+        jenisKelamin: "laki_laki",
         alamat: "Jl. Test No. 1",
         pekerjaan: "Tester",
         noTelepon: "081234567899",

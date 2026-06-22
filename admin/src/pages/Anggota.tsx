@@ -26,6 +26,10 @@ interface AnggotaItem {
   nik: string;
   tempatLahir?: string;
   tanggalLahir?: string;
+  jenisKelamin: string;
+  agama?: string;
+  statusKawin?: string;
+  pendidikanTerakhir?: string;
   noTelepon: string;
   alamat: string;
   pekerjaan?: string;
@@ -33,6 +37,18 @@ interface AnggotaItem {
   status: string;
   tanggalDaftar: string;
 }
+
+const PENDIDIKAN_OPTIONS = [
+  { value: "", label: "Pilih" },
+  { value: "SD", label: "SD" },
+  { value: "SMP", label: "SMP" },
+  { value: "SMA", label: "SMA/SMK" },
+  { value: "D1", label: "D1" },
+  { value: "D3", label: "D3" },
+  { value: "S1", label: "S1" },
+  { value: "S2", label: "S2" },
+  { value: "S3", label: "S3" },
+];
 
 function KartuAnggota({ a }: { a: AnggotaItem }) {
   return (
@@ -67,6 +83,10 @@ function KartuAnggota({ a }: { a: AnggotaItem }) {
               <span className="font-medium">{a.nik}</span>
             </div>
             <div className="flex justify-between border-b border-border pb-1.5">
+              <span className="text-muted-foreground print:text-gray-600">JK</span>
+              <span className="font-medium">{a.jenisKelamin === "laki_laki" ? "Laki-laki" : "Perempuan"}</span>
+            </div>
+            <div className="flex justify-between border-b border-border pb-1.5">
               <span className="text-muted-foreground print:text-gray-600">Telp</span>
               <span className="font-medium">{a.noTelepon}</span>
             </div>
@@ -97,6 +117,152 @@ function KartuAnggota({ a }: { a: AnggotaItem }) {
   );
 }
 
+function AnggotaForm({
+  mode,
+  defaultValues,
+  onSubmit,
+  onCancel,
+  isPending,
+}: {
+  mode: "create" | "edit";
+  defaultValues?: AnggotaItem;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onCancel: () => void;
+  isPending: boolean;
+}) {
+  const [errors, setErrors] = useState<FieldErrors>({});
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const values: Record<string, string> = {
+      nama: (form.get("nama") as string) || "",
+      nik: (form.get("nik") as string) || "",
+      tempatLahir: (form.get("tempatLahir") as string) || "",
+      tanggalLahir: (form.get("tanggalLahir") as string) || "",
+      jenisKelamin: (form.get("jenisKelamin") as string) || "",
+      alamat: (form.get("alamat") as string) || "",
+      noTelepon: (form.get("noTelepon") as string) || "",
+    };
+
+    const errs = validate(values, {
+      nama: [rules.required("Nama"), rules.minLength(3, "Nama")],
+      nik: [rules.nik()],
+      tempatLahir: [rules.required("Tempat Lahir")],
+      tanggalLahir: [rules.required("Tanggal Lahir"), rules.minAge(17)],
+      jenisKelamin: [rules.required("Jenis Kelamin")],
+      alamat: [rules.required("Alamat"), rules.minLength(5, "Alamat")],
+      noTelepon: [rules.phone()],
+    });
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
+    onSubmit(e);
+  };
+
+  const clearError = (field: string) => setErrors((p) => ({ ...p, [field]: "" }));
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 mt-2" noValidate>
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="Nama Lengkap" required error={errors.nama} className="col-span-2">
+          <Input name="nama" placeholder="Masukkan nama lengkap" defaultValue={defaultValues?.nama || ""} className="h-10 bg-muted border-input" onChange={() => clearError("nama")} />
+        </FormField>
+
+        <FormField label="NIK" error={errors.nik} className="col-span-2" hint="16 digit angka">
+          <Input name="nik" maxLength={16} placeholder="16 digit NIK" defaultValue={defaultValues?.nik || ""} className="h-10 bg-muted border-input" onChange={() => clearError("nik")} />
+        </FormField>
+
+        <FormField label="Jenis Kelamin" required error={errors.jenisKelamin}>
+          <select name="jenisKelamin" defaultValue={defaultValues?.jenisKelamin || ""} onChange={() => clearError("jenisKelamin")} className="w-full h-10 rounded-lg border border-input bg-muted px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors">
+            <option value="">Pilih</option>
+            <option value="laki_laki">Laki-laki</option>
+            <option value="perempuan">Perempuan</option>
+          </select>
+        </FormField>
+
+        <FormField label="Status Kawin">
+          <select name="statusKawin" defaultValue={defaultValues?.statusKawin || ""} className="w-full h-10 rounded-lg border border-input bg-muted px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors">
+            <option value="">Pilih</option>
+            <option value="belum_kawin">Belum Kawin</option>
+            <option value="kawin">Kawin</option>
+            <option value="cerai_hidup">Cerai Hidup</option>
+            <option value="cerai_mati">Cerai Mati</option>
+          </select>
+        </FormField>
+
+        <FormField label="Tempat Lahir" required error={errors.tempatLahir}>
+          <Input name="tempatLahir" placeholder="Kota lahir" defaultValue={defaultValues?.tempatLahir || ""} className="h-10 bg-muted border-input" onChange={() => clearError("tempatLahir")} />
+        </FormField>
+
+        <FormField label="Tanggal Lahir" required error={errors.tanggalLahir} hint="Usia minimal 17 tahun">
+          <Input type="date" name="tanggalLahir" defaultValue={defaultValues?.tanggalLahir || ""} className="h-10 bg-muted border-input" onChange={() => clearError("tanggalLahir")} />
+        </FormField>
+
+        <FormField label="Agama">
+          <Input name="agama" placeholder="Islam, Kristen, dll" defaultValue={defaultValues?.agama || ""} className="h-10 bg-muted border-input" />
+        </FormField>
+
+        <FormField label="Pendidikan Terakhir">
+          <select name="pendidikanTerakhir" defaultValue={defaultValues?.pendidikanTerakhir || ""} className="w-full h-10 rounded-lg border border-input bg-muted px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors">
+            {PENDIDIKAN_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </FormField>
+
+        <FormField label="Pekerjaan">
+          <Input name="pekerjaan" placeholder="Contoh: PNS, Wiraswasta" defaultValue={defaultValues?.pekerjaan || ""} className="h-10 bg-muted border-input" />
+        </FormField>
+
+        <FormField label="No. Telepon/WA" error={errors.noTelepon} hint="Mulai dengan 0, 9-14 digit">
+          <Input type="tel" name="noTelepon" placeholder="Contoh: 08123456789" defaultValue={defaultValues?.noTelepon || ""} className="h-10 bg-muted border-input" onChange={() => clearError("noTelepon")} />
+        </FormField>
+
+        <FormField label="Email" className="col-span-2">
+          <Input type="email" name="email" placeholder="email@contoh.com" defaultValue={defaultValues?.email || ""} className="h-10 bg-muted border-input" />
+        </FormField>
+
+        <FormField label="Alamat Lengkap" required error={errors.alamat} className="col-span-2">
+          <Input name="alamat" placeholder="Jalan, RT/RW, Desa/Kelurahan" defaultValue={defaultValues?.alamat || ""} className="h-10 bg-muted border-input" onChange={() => clearError("alamat")} />
+        </FormField>
+      </div>
+
+      {Object.keys(errors).length > 0 && (
+        <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3 text-xs text-red-700 dark:text-red-400">
+          Harap perbaiki <strong>{Object.keys(errors).length}</strong> field yang bermasalah sebelum menyimpan
+        </div>
+      )}
+
+      <div className="flex justify-end gap-2 pt-2">
+        <Button variant="outline" onClick={onCancel}>Batal</Button>
+        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isPending}>
+          {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+          {mode === "create" ? "Simpan Anggota" : "Simpan Perubahan"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+const JK_LABEL: Record<string, string> = { laki_laki: "L", perempuan: "P" };
+const JK_COLOR: Record<string, string> = {
+  laki_laki: "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
+  perempuan: "bg-pink-100 text-pink-700 dark:bg-pink-950/30 dark:text-pink-400",
+};
+
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  aktif: { label: "Aktif", className: "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400" },
+  menunggu_verifikasi: { label: "Pending", className: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
+  nonaktif: { label: "Nonaktif", className: "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" },
+  ditolak: { label: "Ditolak", className: "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400" },
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const s = STATUS_CONFIG[status] || { label: status, className: "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" };
+  return <Badge className={`${s.className} font-medium text-[11px] px-2 py-0.5 border-0`}>{s.label}</Badge>;
+}
+
 export default function Anggota() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -109,8 +275,6 @@ export default function Anggota() {
   const [printOpen, setPrintOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [printId, setPrintId] = useState<string | null>(null);
-  const [createErrors, setCreateErrors] = useState<FieldErrors>({});
-  const [editErrors, setEditErrors] = useState<FieldErrors>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<{ id: string; action: "activate" | "deactivate" } | null>(null);
   const [page, setPage] = useState(1);
@@ -125,7 +289,7 @@ export default function Anggota() {
     staleTime: 30_000,
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["anggota", debouncedSearch, page],
     queryFn: async () => {
       const res = await api<{ data: AnggotaItem[]; meta: any }>(`/api/anggota?search=${encodeURIComponent(debouncedSearch)}&page=${page}&limit=20`);
@@ -148,7 +312,6 @@ export default function Anggota() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["anggota"] });
       setCreateOpen(false);
-      setCreateErrors({});
       toast("Anggota berhasil ditambahkan", "success");
     },
     onError: () => toast("Gagal menambahkan anggota", "error"),
@@ -162,7 +325,6 @@ export default function Anggota() {
       queryClient.invalidateQueries({ queryKey: ["anggota-detail"] });
       setEditOpen(false);
       setEditingId(null);
-      setEditErrors({});
       toast("Data anggota berhasil diperbarui", "success");
     },
     onError: () => toast("Gagal memperbarui anggota", "error"),
@@ -173,10 +335,7 @@ export default function Anggota() {
       api(`/api/anggota/${id}/${action}`, { method: "PATCH" }),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ["anggota"] });
-      toast(
-        vars.action === "activate" ? "Anggota diaktifkan" : "Anggota dinonaktifkan",
-        "success"
-      );
+      toast(vars.action === "activate" ? "Anggota diaktifkan" : "Anggota dinonaktifkan", "success");
     },
     onError: () => toast("Gagal mengubah status anggota", "error"),
   });
@@ -184,7 +343,6 @@ export default function Anggota() {
   const openEdit = (id: string) => {
     setEditingId(id);
     setEditOpen(true);
-    setEditErrors({});
   };
 
   const openPrint = (id: string) => {
@@ -193,75 +351,20 @@ export default function Anggota() {
   };
 
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
     const form = new FormData(e.currentTarget);
-    const values = {
-      nama: (form.get("nama") as string) || "",
-      nik: (form.get("nik") as string) || "",
-      tempatLahir: (form.get("tempatLahir") as string) || "",
-      tanggalLahir: (form.get("tanggalLahir") as string) || "",
-      alamat: (form.get("alamat") as string) || "",
-      pekerjaan: (form.get("pekerjaan") as string) || "",
-      noTelepon: (form.get("noTelepon") as string) || "",
-      email: (form.get("email") as string) || "",
-    };
-
-    const errs = validate(values, {
-      nama: [rules.required("Nama"), rules.minLength(3, "Nama")],
-      nik: [rules.nik()],
-      tempatLahir: [rules.required("Tempat Lahir")],
-      tanggalLahir: [rules.required("Tanggal Lahir"), rules.minAge(17)],
-      alamat: [rules.required("Alamat"), rules.minLength(5, "Alamat")],
-      pekerjaan: [rules.required("Pekerjaan")],
-      noTelepon: [rules.phone()],
-      email: [rules.email()],
-    });
-    setCreateErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-
-    createMutation.mutate({
-      nama: form.get("nama"),
-      nik: form.get("nik"),
-      tempatLahir: form.get("tempatLahir"),
-      tanggalLahir: form.get("tanggalLahir"),
-      alamat: form.get("alamat"),
-      pekerjaan: form.get("pekerjaan"),
-      noTelepon: form.get("noTelepon"),
-      email: form.get("email"),
-    });
+    const body: Record<string, any> = {};
+    for (const [key, val] of form.entries()) {
+      if (val && String(val).trim()) body[key] = String(val).trim();
+    }
+    createMutation.mutate(body);
   };
 
   const handleEdit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
     if (!editingId) return;
     const form = new FormData(e.currentTarget);
-    const values = {
-      nama: (form.get("nama") as string) || "",
-      nik: (form.get("nik") as string) || "",
-      tempatLahir: (form.get("tempatLahir") as string) || "",
-      tanggalLahir: (form.get("tanggalLahir") as string) || "",
-      alamat: (form.get("alamat") as string) || "",
-      pekerjaan: (form.get("pekerjaan") as string) || "",
-      noTelepon: (form.get("noTelepon") as string) || "",
-      email: (form.get("email") as string) || "",
-    };
-
-    const errs = validate(values, {
-      nama: [rules.required("Nama"), rules.minLength(3, "Nama")],
-      nik: [rules.nik()],
-      tempatLahir: [rules.required("Tempat Lahir")],
-      tanggalLahir: [rules.required("Tanggal Lahir")],
-      alamat: [rules.required("Alamat"), rules.minLength(5, "Alamat")],
-      pekerjaan: [rules.required("Pekerjaan")],
-      noTelepon: [rules.phone()],
-      email: [rules.email()],
-    });
-    setEditErrors(errs);
-    if (Object.keys(errs).length > 0) return;
-
-    const body: any = {};
-    for (const [key, val] of Object.entries(values)) {
-      if (val) body[key] = val;
+    const body: Record<string, any> = {};
+    for (const [key, val] of form.entries()) {
+      if (val && String(val).trim()) body[key] = String(val).trim();
     }
     updateMutation.mutate({ id: editingId, body });
   };
@@ -278,6 +381,9 @@ export default function Anggota() {
     }
   };
 
+  const activeCount = useMemo(() => data?.data?.filter((a) => a.status === "aktif").length ?? 0, [data?.data]);
+  const pendingCount = useMemo(() => data?.data?.filter((a) => a.status === "menunggu_verifikasi").length ?? 0, [data?.data]);
+
   const handlePrint = () => {
     const style = document.createElement("style");
     style.innerHTML = `
@@ -287,11 +393,9 @@ export default function Anggota() {
         #print-card, #print-card * { visibility: visible !important; }
         #print-card {
           position: absolute;
-          left: 50%;
-          top: 50%;
+          left: 50%; top: 50%;
           transform: translate(-50%, -50%);
-          width: 100%;
-          max-width: 800px;
+          width: 100%; max-width: 800px;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
@@ -302,19 +406,6 @@ export default function Anggota() {
     document.head.removeChild(style);
   };
 
-  const statusBadge = (status: string) => {
-    const map: Record<string, { label: string; className: string }> = {
-      aktif: { label: "Aktif", className: "bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400" },
-      menunggu_verifikasi: { label: "Pending", className: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" },
-      nonaktif: { label: "Nonaktif", className: "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" },
-      ditolak: { label: "Ditolak", className: "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400" },
-    };
-    const s = map[status] || { label: status, className: "bg-gray-100 text-gray-700 dark:bg-zinc-800 dark:text-zinc-300" };
-    return <Badge className={`${s.className} font-medium text-[11px] px-2 py-0.5 border-0`}>{s.label}</Badge>;
-  };
-
-  const editForm = detailData?.data;
-
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
@@ -322,10 +413,7 @@ export default function Anggota() {
           <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">Daftar Anggota</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Kelola data anggota koperasi</p>
         </div>
-        <Dialog open={createOpen} onOpenChange={(v) => {
-          setCreateOpen(v);
-          if (!v) setCreateErrors({});
-        }}>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">
               <Plus className="w-4 h-4 mr-1.5" />
@@ -335,64 +423,15 @@ export default function Anggota() {
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border-0 shadow-xl">
             <DialogHeader>
               <DialogTitle className="text-lg flex items-center gap-2">
-              <Users className="w-5 h-5 text-emerald-600" />
-              Tambah Anggota Baru
-            </DialogTitle>
+                <Users className="w-5 h-5 text-emerald-600" />
+                Tambah Anggota Baru
+              </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4 mt-2" noValidate>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Nama Lengkap" required error={createErrors.nama} className="col-span-2">
-                  <Input name="nama" placeholder="Masukkan nama lengkap" className="h-10 bg-muted border-input" onChange={() => setCreateErrors(p => ({ ...p, nama: "" }))} />
-                </FormField>
-                
-                <FormField label="NIK" error={createErrors.nik} className="col-span-2" hint="16 digit angka">
-                  <Input name="nik" maxLength={16} placeholder="16 digit NIK" className="h-10 bg-muted border-input" onChange={() => setCreateErrors(p => ({ ...p, nik: "" }))} />
-                </FormField>
-                
-                <FormField label="Tempat Lahir" required error={createErrors.tempatLahir}>
-                  <Input name="tempatLahir" placeholder="Kota lahir" className="h-10 bg-muted border-input" onChange={() => setCreateErrors(p => ({ ...p, tempatLahir: "" }))} />
-                </FormField>
-                
-                <FormField label="Tanggal Lahir" required error={createErrors.tanggalLahir} hint="Usia minimal 17 tahun">
-                  <Input type="date" name="tanggalLahir" className="h-10 bg-muted border-input" onChange={() => setCreateErrors(p => ({ ...p, tanggalLahir: "" }))} />
-                </FormField>
-                
-                <FormField label="Pekerjaan" required error={createErrors.pekerjaan}>
-                  <Input name="pekerjaan" placeholder="Contoh: PNS, Wiraswasta" className="h-10 bg-muted border-input" onChange={() => setCreateErrors(p => ({ ...p, pekerjaan: "" }))} />
-                </FormField>
-                
-                <FormField label="No. Telepon/WA" error={createErrors.noTelepon} hint="Mulai dengan 0, 9-14 digit">
-                  <Input type="tel" name="noTelepon" placeholder="Contoh: 08123456789" className="h-10 bg-muted border-input" onChange={() => setCreateErrors(p => ({ ...p, noTelepon: "" }))} />
-                </FormField>
-
-                <FormField label="Email" error={createErrors.email} className="col-span-2">
-                  <Input type="email" name="email" placeholder="email@contoh.com" className="h-10 bg-muted border-input" onChange={() => setCreateErrors(p => ({ ...p, email: "" }))} />
-                </FormField>
-                
-                <FormField label="Alamat Lengkap" required error={createErrors.alamat} className="col-span-2">
-                  <Input name="alamat" placeholder="Jalan, RT/RW, Desa/Kelurahan" className="h-10 bg-muted border-input" onChange={() => setCreateErrors(p => ({ ...p, alamat: "" }))} />
-                </FormField>
-              </div>
-
-              {Object.keys(createErrors).length > 0 && (
-                <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3 text-xs text-red-700 dark:text-red-400">
-                  Harap perbaiki <strong>{Object.keys(createErrors).length}</strong> field yang bermasalah sebelum menyimpan
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => { setCreateOpen(false); setCreateErrors({}); }}>Batal</Button>
-                <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                  Simpan Anggota
-                </Button>
-              </div>
-            </form>
+            <AnggotaForm mode="create" onSubmit={handleCreate} onCancel={() => setCreateOpen(false)} isPending={createMutation.isPending} />
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Print Dialog */}
       <Dialog open={printOpen} onOpenChange={setPrintOpen}>
         <DialogContent className="max-w-2xl border-0 shadow-xl">
           <DialogHeader>
@@ -417,8 +456,7 @@ export default function Anggota() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      <Dialog open={editOpen} onOpenChange={(v) => { setEditOpen(v); if (!v) setEditingId(null); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto border-0 shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-lg flex items-center gap-2">
@@ -426,56 +464,8 @@ export default function Anggota() {
               Edit Anggota
             </DialogTitle>
           </DialogHeader>
-          {editForm ? (
-            <form onSubmit={handleEdit} className="space-y-4 mt-2" noValidate>
-              <div className="grid grid-cols-2 gap-4">
-                <FormField label="Nama Lengkap" required error={editErrors.nama} className="col-span-2">
-                  <Input name="nama" defaultValue={detailData?.data.nama} onChange={() => setEditErrors(p => ({ ...p, nama: "" }))} />
-                </FormField>
-                
-                <FormField label="NIK" error={editErrors.nik} className="col-span-2">
-                  <Input name="nik" defaultValue={detailData?.data.nik} onChange={() => setEditErrors(p => ({ ...p, nik: "" }))} />
-                </FormField>
-                
-                <FormField label="Tempat Lahir" required error={editErrors.tempatLahir}>
-                  <Input name="tempatLahir" defaultValue={detailData?.data.tempatLahir} onChange={() => setEditErrors(p => ({ ...p, tempatLahir: "" }))} />
-                </FormField>
-                
-                <FormField label="Tanggal Lahir" required error={editErrors.tanggalLahir}>
-                  <Input type="date" name="tanggalLahir" defaultValue={detailData?.data.tanggalLahir} onChange={() => setEditErrors(p => ({ ...p, tanggalLahir: "" }))} />
-                </FormField>
-                
-                <FormField label="Pekerjaan" required error={editErrors.pekerjaan}>
-                  <Input name="pekerjaan" defaultValue={detailData?.data.pekerjaan} onChange={() => setEditErrors(p => ({ ...p, pekerjaan: "" }))} />
-                </FormField>
-                
-                <FormField label="No. Telepon/WA" error={editErrors.noTelepon}>
-                  <Input name="noTelepon" defaultValue={detailData?.data.noTelepon} onChange={() => setEditErrors(p => ({ ...p, noTelepon: "" }))} />
-                </FormField>
-
-                <FormField label="Email" error={editErrors.email} className="col-span-2">
-                  <Input type="email" name="email" defaultValue={detailData?.data.email} onChange={() => setEditErrors(p => ({ ...p, email: "" }))} />
-                </FormField>
-                
-                <FormField label="Alamat Lengkap" required error={editErrors.alamat} className="col-span-2">
-                  <Input name="alamat" defaultValue={detailData?.data.alamat} onChange={() => setEditErrors(p => ({ ...p, alamat: "" }))} />
-                </FormField>
-              </div>
-
-              {Object.keys(editErrors).length > 0 && (
-                <div className="rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 p-3 text-xs text-red-700 dark:text-red-400">
-                  Harap perbaiki <strong>{Object.keys(editErrors).length}</strong> field yang bermasalah sebelum menyimpan
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => { setEditOpen(false); setEditingId(null); setEditErrors({}); }}>Batal</Button>
-                <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                  Simpan Perubahan
-                </Button>
-              </div>
-            </form>
+          {detailData?.data ? (
+            <AnggotaForm mode="edit" defaultValues={detailData.data} onSubmit={handleEdit} onCancel={() => { setEditOpen(false); setEditingId(null); }} isPending={updateMutation.isPending} />
           ) : (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -484,7 +474,6 @@ export default function Anggota() {
         </DialogContent>
       </Dialog>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="border border-border shadow-sm">
           <CardContent className="p-4 flex items-center gap-3">
@@ -503,7 +492,7 @@ export default function Anggota() {
               <ChevronRight className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{useMemo(() => data?.data?.filter(a => a.status === "aktif").length ?? 0, [data?.data])}</p>
+              <p className="text-2xl font-bold text-foreground">{activeCount}</p>
               <p className="text-xs text-muted-foreground">Anggota Aktif</p>
             </div>
           </CardContent>
@@ -514,7 +503,7 @@ export default function Anggota() {
               <ChevronRight className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-foreground">{useMemo(() => data?.data?.filter(a => a.status === "menunggu_verifikasi").length ?? 0, [data?.data])}</p>
+              <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
               <p className="text-xs text-muted-foreground">Menunggu Verifikasi</p>
             </div>
           </CardContent>
@@ -538,17 +527,21 @@ export default function Anggota() {
             <div className="flex justify-center py-12">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
+          ) : isError ? (
+            <div className="py-12 text-center text-muted-foreground text-sm">
+              Gagal memuat data anggota.{" "}
+              <button onClick={() => refetch()} className="text-primary underline">Coba lagi</button>
+            </div>
           ) : (
             <>
-              {/* Desktop Table */}
               <div className="hidden lg:block overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
                       <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Anggota</th>
+                      <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Info</th>
                       <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Kontak</th>
                       <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Status</th>
-                      <th className="text-left py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Tanggal Daftar</th>
                       <th className="text-right py-3 px-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">Aksi</th>
                     </tr>
                   </thead>
@@ -561,17 +554,28 @@ export default function Anggota() {
                               {a.nama.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-semibold text-foreground">{a.nama}</p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-semibold text-foreground">{a.nama}</p>
+                                {a.jenisKelamin && (
+                                  <Badge className={`${JK_COLOR[a.jenisKelamin] || "bg-gray-100"} text-[9px] px-1 py-0 font-medium`}>
+                                    {JK_LABEL[a.jenisKelamin] || ""}
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-muted-foreground">{a.noAnggota}</p>
                             </div>
                           </div>
                         </td>
                         <td className="py-3 px-3">
-                          <p className="text-foreground">{a.noTelepon}</p>
-                          <p className="text-xs text-muted-foreground">{a.nik}</p>
+                          <p className="text-xs text-foreground">{a.tempatLahir}, {a.tanggalLahir ? formatDate(a.tanggalLahir) : "-"}</p>
+                          {a.pekerjaan && <p className="text-xs text-muted-foreground">{a.pekerjaan}</p>}
+                          {a.pendidikanTerakhir && <p className="text-[10px] text-muted-foreground/70">{a.pendidikanTerakhir}</p>}
                         </td>
-                        <td className="py-3 px-3">{statusBadge(a.status)}</td>
-                        <td className="py-3 px-3 text-muted-foreground">{formatDate(a.tanggalDaftar)}</td>
+                        <td className="py-3 px-3">
+                          <p className="text-foreground text-xs">{a.noTelepon}</p>
+                          <p className="text-[10px] text-muted-foreground">{a.nik}</p>
+                        </td>
+                        <td className="py-3 px-3">{<StatusBadge status={a.status} />}</td>
                         <td className="py-3 px-3 text-right">
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-foreground hover:bg-muted" onClick={() => openEdit(a.id)}>
@@ -604,7 +608,6 @@ export default function Anggota() {
                 </table>
               </div>
 
-              {/* Mobile Cards */}
               <div className="lg:hidden space-y-3">
                 {data?.data?.map((a) => (
                   <div key={a.id} className="p-5 rounded-2xl bg-card border border-border shadow-sm active:scale-[0.98] transition-transform">
@@ -614,30 +617,59 @@ export default function Anggota() {
                           {a.nama.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-semibold text-foreground">{a.nama}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-semibold text-foreground">{a.nama}</p>
+                            {a.jenisKelamin && (
+                              <Badge className={`${JK_COLOR[a.jenisKelamin] || "bg-gray-100"} text-[9px] px-1 py-0 font-medium`}>
+                                {JK_LABEL[a.jenisKelamin] || ""}
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">{a.noAnggota}</p>
                         </div>
                       </div>
-                      {statusBadge(a.status)}
+                      {<StatusBadge status={a.status} />}
                     </div>
                     <div className="mt-3 pt-3 border-t border-border/80 grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase">Telepon</p>
-                        <p className="text-foreground">{a.noTelepon}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase">Tempat/Tgl Lahir</p>
+                        <p className="text-foreground text-xs">{a.tempatLahir}, {a.tanggalLahir ? formatDate(a.tanggalLahir) : "-"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase">Daftar</p>
-                        <p className="text-foreground">{formatDate(a.tanggalDaftar)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase">Telepon</p>
+                        <p className="text-foreground text-xs">{a.noTelepon}</p>
                       </div>
+                      {a.pekerjaan && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase">Pekerjaan</p>
+                          <p className="text-foreground text-xs">{a.pekerjaan}</p>
+                        </div>
+                      )}
+                      {a.pendidikanTerakhir && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase">Pendidikan</p>
+                          <p className="text-foreground text-xs">{a.pendidikanTerakhir}</p>
+                        </div>
+                      )}
+                      {a.agama && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase">Agama</p>
+                          <p className="text-foreground text-xs">{a.agama}</p>
+                        </div>
+                      )}
+                      {a.statusKawin && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase">Status Kawin</p>
+                          <p className="text-foreground text-xs capitalize">{a.statusKawin.replace(/_/g, " ")}</p>
+                        </div>
+                      )}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Button variant="outline" size="sm" className="flex-auto h-10 text-xs" onClick={() => openEdit(a.id)}>
-                        <Pencil className="w-3 h-3 mr-1" />
-                        Edit
+                        <Pencil className="w-3 h-3 mr-1" /> Edit
                       </Button>
                       <Button variant="outline" size="sm" className="flex-auto h-10 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-900 dark:hover:bg-blue-950/30" onClick={() => openPrint(a.id)}>
-                        <Printer className="w-3 h-3 mr-1" />
-                        Kartu
+                        <Printer className="w-3 h-3 mr-1" /> Kartu
                       </Button>
                       <Button
                         variant="outline"
@@ -652,50 +684,29 @@ export default function Anggota() {
                   </div>
                 ))}
                 {(!data?.data || data.data.length === 0) && (
-                  <div className="py-12 text-center text-muted-foreground text-sm">
-                    Tidak ada data anggota
-                  </div>
+                  <div className="py-12 text-center text-muted-foreground text-sm">Tidak ada data anggota</div>
                 )}
               </div>
 
-              {/* Pagination */}
               {total > 20 && (
                 <div className="flex items-center justify-between gap-4 pt-4 border-t border-border mt-4">
                   <p className="text-sm text-muted-foreground">
                     Halaman {page} dari {Math.ceil(total / 20)} (total {total} anggota)
                   </p>
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(Math.max(1, page - 1))}
-                      disabled={page === 1}
-                    >
-                      Sebelumnya
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage(page + 1)}
-                      disabled={page >= Math.ceil(total / 20)}
-                    >
-                      Selanjutnya
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setPage(Math.max(1, page - 1))} disabled={page === 1}>Sebelumnya</Button>
+                    <Button variant="outline" size="sm" onClick={() => setPage(page + 1)} disabled={page >= Math.ceil(total / 20)}>Selanjutnya</Button>
                   </div>
                 </div>
               )}
             </>
           )}
 
-          {/* Confirm toggle dialog */}
           <ConfirmDialog
             open={confirmOpen}
             onOpenChange={setConfirmOpen}
             title={confirmTarget?.action === "deactivate" ? "Nonaktifkan Anggota?" : "Aktifkan Anggota?"}
-            description={confirmTarget?.action === "deactivate"
-              ? "Anggota yang dinonaktifkan tidak dapat mengakses sistem. Data transaksi tetap tersimpan."
-              : "Anggota akan dapat mengakses sistem kembali."
-            }
+            description={confirmTarget?.action === "deactivate" ? "Anggota yang dinonaktifkan tidak dapat mengakses sistem. Data transaksi tetap tersimpan." : "Anggota akan dapat mengakses sistem kembali."}
             variant="warning"
             onConfirm={confirmToggle}
             disabled={toggleMutation.isPending}

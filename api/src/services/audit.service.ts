@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { db } from "../lib/db.js";
 import { auditLog } from "../../database/schema/index.js";
-import { desc, sql } from "drizzle-orm";
+import { desc, sql, and } from "drizzle-orm";
 
 export async function createAuditLog({
   userId,
@@ -45,10 +45,10 @@ export async function listAuditLogs({
 }) {
   const offset = (page - 1) * limit;
 
-  const conditions: any[] = [];
+  const conditions: ReturnType<typeof sql>[] = [];
   if (action) conditions.push(sql`${auditLog.action} = ${action}`);
   if (entityType) conditions.push(sql`${auditLog.entityType} = ${entityType}`);
-  const where = conditions.length > 0 ? sql`${conditions.join(" AND ")}` : undefined;
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
 
   const data = await db
     .select()
